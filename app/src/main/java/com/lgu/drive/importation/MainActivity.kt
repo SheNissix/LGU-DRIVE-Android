@@ -118,12 +118,10 @@ fun ModernAppLayoutContainer() {
                         selected = currentRoute == tab.route,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            if (currentRoute != tab.route) {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                            navController.navigate(tab.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -136,7 +134,7 @@ fun ModernAppLayoutContainer() {
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "v2.4.0-PROTOTYPE",
+                    "v2.4.1-PROTOTYPE",
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.LightGray
@@ -218,7 +216,7 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
     val motorVehicles = remember { mutableStateListOf(mutableMapOf("desc" to "", "tariff" to "", "origin" to "", "qty" to "1")) }
     val passengerCars = remember { mutableStateListOf(mutableMapOf(
         "desc" to "", "tariff" to "", "origin" to "", "vin" to "", "year" to "", "color" to "",
-        "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "Gasoline"
+        "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"
     )) }
 
     var signatureUriText by remember { mutableStateOf("No confirmation files selected") }
@@ -237,7 +235,7 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
         donorName = ""; donorAddr = ""; donorTel = ""; donorFax = ""; donorEmail = ""; selectedDonorId = ""; donorStatus = "new"
         isMotorVehicleSelected = false; isPassengerCarSelected = false
         motorVehicles.clear(); motorVehicles.add(mutableMapOf("desc" to "", "tariff" to "", "origin" to "", "qty" to "1"))
-        passengerCars.clear(); passengerCars.add(mutableMapOf("desc" to "", "tariff" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "Gasoline"))
+        passengerCars.clear(); passengerCars.add(mutableMapOf("desc" to "", "tariff" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
         signatureUriText = "No confirmation files selected"
     }
 
@@ -571,7 +569,12 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
                         )
 
                         scope.launch {
-                            DatabaseService.submitVehicleApplication(payload, if(isMotorVehicleSelected) motorVehicles else emptyList(), if(isPassengerCarSelected) passengerCars else emptyList())
+                            val passengerCarsCleaned = passengerCars.map { car ->
+                                car.toMutableMap().apply {
+                                    put("fuelType", (get("fuelType") ?: "G").take(1))
+                                }
+                            }
+                            DatabaseService.submitVehicleApplication(payload, if(isMotorVehicleSelected) motorVehicles else emptyList(), if(isPassengerCarSelected) passengerCarsCleaned else emptyList())
                                 .onSuccess { id ->
                                     Toast.makeText(context, "Application submitted: $id", Toast.LENGTH_LONG).show()
                                     navController.navigate("history")

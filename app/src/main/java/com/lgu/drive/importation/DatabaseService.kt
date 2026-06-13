@@ -99,14 +99,13 @@ object DatabaseService {
 
             val doneeStatus = formData["DoneeStatus"] as String
             val doneeId = if (doneeStatus == "existing") formData["ExistingDoneeID"] as String else {
-                var lastId = "DON0000"
+                var maxNum = 0
                 conn.createStatement().use { stmt ->
-                    stmt.executeQuery("SELECT DoneeID FROM donee ORDER BY DoneeID DESC LIMIT 1").use { rs ->
-                        if (rs.next()) lastId = rs.getString(1)
+                    stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DoneeID, 4) AS UNSIGNED)) FROM donee").use { rs ->
+                        if (rs.next()) maxNum = rs.getInt(1)
                     }
                 }
-                val numericPart = lastId.filter { it.isDigit() }.toIntOrNull() ?: 0
-                val id = String.format("DON%04d", numericPart + 1)
+                val id = String.format("DON%04d", maxNum + 1)
                 
                 conn.prepareStatement("INSERT INTO donee VALUES (?,?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DoneeName"] as String)
@@ -119,14 +118,13 @@ object DatabaseService {
 
             val donorStatus = formData["DonorStatus"] as String
             val donorId = if (donorStatus == "existing") formData["ExistingDonorID"] as String else {
-                var lastId = "DOR0000"
+                var maxNum = 0
                 conn.createStatement().use { stmt ->
-                    stmt.executeQuery("SELECT DonorID FROM donor ORDER BY DonorID DESC LIMIT 1").use { rs ->
-                        if (rs.next()) lastId = rs.getString(1)
+                    stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonorID, 4) AS UNSIGNED)) FROM donor").use { rs ->
+                        if (rs.next()) maxNum = rs.getInt(1)
                     }
                 }
-                val numericPart = lastId.filter { it.isDigit() }.toIntOrNull() ?: 0
-                val id = String.format("DOR%04d", numericPart + 1)
+                val id = String.format("DOR%04d", maxNum + 1)
 
                 conn.prepareStatement("INSERT INTO donor VALUES (?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DonorName"] as String)
@@ -137,14 +135,13 @@ object DatabaseService {
                 id
             }
 
-            var lastAppId = "APP-0000"
+            var maxAppNum = 0
             conn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT ApplicationID FROM application ORDER BY ApplicationID DESC LIMIT 1").use { rs ->
-                    if (rs.next()) lastAppId = rs.getString(1)
+                stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(ApplicationID, 5) AS UNSIGNED)) FROM application").use { rs ->
+                    if (rs.next()) maxAppNum = rs.getInt(1)
                 }
             }
-            val appNumericPart = lastAppId.filter { it.isDigit() }.toIntOrNull() ?: 0
-            val appId = String.format("APP-%04d", appNumericPart + 1)
+            val appId = String.format("APP-%04d", maxAppNum + 1)
 
             conn.prepareStatement("INSERT INTO application VALUES (?,?,?,?,?)").use { appPs ->
                 appPs.setString(1, appId); appPs.setString(2, doneeId); appPs.setString(3, donorId)
