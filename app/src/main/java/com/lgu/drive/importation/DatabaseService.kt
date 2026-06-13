@@ -29,17 +29,27 @@ object DatabaseService {
         return DriverManager.getConnection(URL, props)
     }
 
-    suspend fun fetchDonorsAndDonees(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
+    suspend fun fetchDonorsAndDoneesDetailed(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
         val donors = mutableListOf<Map<String, String>>()
         val donees = mutableListOf<Map<String, String>>()
         try {
             getConnection().use { conn ->
                 conn.createStatement().use { stmt ->
-                    stmt.executeQuery("SELECT DonorID, DonorName FROM donor").use { rs ->
-                        while (rs.next()) donors.add(mapOf("id" to rs.getString("DonorID"), "name" to rs.getString("DonorName")))
+                    stmt.executeQuery("SELECT * FROM donor").use { rs ->
+                        val md = rs.metaData
+                        while (rs.next()) {
+                            val map = mutableMapOf<String, String>()
+                            for (i in 1..md.columnCount) map[md.getColumnName(i)] = rs.getString(i) ?: ""
+                            donors.add(map)
+                        }
                     }
-                    stmt.executeQuery("SELECT DoneeID, DoneeName FROM donee").use { rs ->
-                        while (rs.next()) donees.add(mapOf("id" to rs.getString("DoneeID"), "name" to rs.getString("DoneeName")))
+                    stmt.executeQuery("SELECT * FROM donee").use { rs ->
+                        val md = rs.metaData
+                        while (rs.next()) {
+                            val map = mutableMapOf<String, String>()
+                            for (i in 1..md.columnCount) map[md.getColumnName(i)] = rs.getString(i) ?: ""
+                            donees.add(map)
+                        }
                     }
                 }
             }
@@ -77,7 +87,11 @@ object DatabaseService {
         records
     }
 
-    suspend fun submitVehicleApplication(formData: Map<String, Any>, motorVehicles: List<Map<String, String>>): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun submitVehicleApplication(
+        formData: Map<String, Any>, 
+        motorVehicles: List<Map<String, String>>, 
+        passengerCars: List<Map<String, String>>
+    ): Result<String> = withContext(Dispatchers.IO) {
         var conn: Connection? = null
         try {
             conn = getConnection()
@@ -85,7 +99,15 @@ object DatabaseService {
 
             val doneeStatus = formData["DoneeStatus"] as String
             val doneeId = if (doneeStatus == "existing") formData["ExistingDoneeID"] as String else {
-                val id = "DON${Random.nextInt(1000, 9999)}"
+                var lastId = "DON0000"
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT DoneeID FROM donee ORDER BY DoneeID DESC LIMIT 1").use { rs ->
+                        if (rs.next()) lastId = rs.getString(1)
+                    }
+                }
+                val numericPart = lastId.filter { it.isDigit() }.toIntOrNull() ?: 0
+                val id = String.format("DON%04d", numericPart + 1)
+                
                 conn.prepareStatement("INSERT INTO donee VALUES (?,?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DoneeName"] as String)
                     ps.setString(3, formData["DoneeAddress"] as String); ps.setString(4, formData["ContactPerson"] as String)
@@ -97,7 +119,15 @@ object DatabaseService {
 
             val donorStatus = formData["DonorStatus"] as String
             val donorId = if (donorStatus == "existing") formData["ExistingDonorID"] as String else {
-                val id = "DOR${Random.nextInt(1000, 9999)}"
+                var lastId = "DOR0000"
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT DonorID FROM donor ORDER BY DonorID DESC LIMIT 1").use { rs ->
+                        if (rs.next()) lastId = rs.getString(1)
+                    }
+                }
+                val numericPart = lastId.filter { it.isDigit() }.toIntOrNull() ?: 0
+                val id = String.format("DOR%04d", numericPart + 1)
+
                 conn.prepareStatement("INSERT INTO donor VALUES (?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DonorName"] as String)
                     ps.setString(3, formData["DonorAddress"] as String); ps.setString(4, formData["DonorTelNo"] as String)
@@ -107,16 +137,19 @@ object DatabaseService {
                 id
             }
 
-            var appCount = 0
+            var lastAppId = "APP-0000"
             conn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT COUNT(*) FROM application").use { rs -> if (rs.next()) appCount = rs.getInt(1) }
+                stmt.executeQuery("SELECT ApplicationID FROM application ORDER BY ApplicationID DESC LIMIT 1").use { rs ->
+                    if (rs.next()) lastAppId = rs.getString(1)
+                }
             }
-            val appId = String.format("APP-%04d", appCount + Random.nextInt(100, 999))
+            val appNumericPart = lastAppId.filter { it.isDigit() }.toIntOrNull() ?: 0
+            val appId = String.format("APP-%04d", appNumericPart + 1)
 
             conn.prepareStatement("INSERT INTO application VALUES (?,?,?,?,?)").use { appPs ->
                 appPs.setString(1, appId); appPs.setString(2, doneeId); appPs.setString(3, donorId)
                 appPs.setDate(4, java.sql.Date(System.currentTimeMillis()))
-                appPs.setString(5, formData["DonorSignaturePath"] as? String ?: "[sig_mobile.png]")
+                appPs.setString(5, formData["DonorSignaturePath"] as String)
                 appPs.executeUpdate()
             }
 
@@ -135,26 +168,28 @@ object DatabaseService {
                 assetInserted = true
             }
 
-            val pDesc = formData["PassengerDesc"] as String
-            if (pDesc.isNotBlank()) {
+            for (pc in passengerCars) {
+                val pDesc = pc["desc"] ?: ""
+                if (pDesc.isBlank()) continue
+
                 val donateId = "CAR${Random.nextInt(10000, 99999)}"
                 conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { psV ->
                     psV.setString(1, donateId); psV.setString(2, pDesc)
-                    psV.setString(3, formData["PassengerTariff"]?.toString()?.ifBlank { "8703" } ?: "8703")
-                    psV.setString(4, formData["PassengerOrigin"]?.toString()?.ifBlank { "Japan" } ?: "Japan")
+                    psV.setString(3, pc["tariff"]?.ifBlank { "8703" } ?: "8703")
+                    psV.setString(4, pc["origin"]?.ifBlank { "Japan" } ?: "Japan")
                     psV.setInt(5, 1); psV.setString(6, appId); psV.setString(7, "Passenger Car")
                     psV.executeUpdate()
                 }
 
                 conn.prepareStatement("INSERT INTO passengercar VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)") .use { psC ->
-                    psC.setString(1, (formData["VIN"] as String).uppercase().trim()); psC.setString(2, donateId)
-                    psC.setInt(3, formData["YearModel"]?.toString()?.toIntOrNull() ?: 0)
-                    psC.setString(4, formData["Color"]?.toString()?.ifBlank { "N/A" } ?: "N/A")
-                    try { psC.setDate(5, java.sql.Date.valueOf(formData["RegistrationDate"] as String)) } catch (e: Exception) { psC.setNull(5, java.sql.Types.DATE) }
-                    psC.setString(6, formData["VehicleWeight"]?.toString()?.ifBlank { "0" } ?: "0")
-                    psC.setString(7, formData["EngineNumber"]?.toString()?.ifBlank { "N/A" } ?: "N/A")
-                    psC.setString(8, formData["EngineDisplacement"]?.toString()?.ifBlank { "N/A" } ?: "N/A")
-                    psC.setString(9, formData["FuelType"] as String); psC.executeUpdate()
+                    psC.setString(1, (pc["vin"] ?: "").uppercase().trim()); psC.setString(2, donateId)
+                    psC.setInt(3, pc["year"]?.toIntOrNull() ?: 0)
+                    psC.setString(4, pc["color"]?.ifBlank { "N/A" } ?: "N/A")
+                    try { psC.setDate(5, java.sql.Date.valueOf(pc["regDate"] ?: "")) } catch (e: Exception) { psC.setNull(5, java.sql.Types.DATE) }
+                    psC.setString(6, pc["weight"]?.ifBlank { "0" } ?: "0")
+                    psC.setString(7, pc["engineNo"]?.ifBlank { "N/A" } ?: "N/A")
+                    psC.setString(8, pc["displacement"]?.ifBlank { "N/A" } ?: "N/A")
+                    psC.setString(9, pc["fuelType"]?.ifBlank { "Gasoline" } ?: "Gasoline"); psC.executeUpdate()
                 }
                 assetInserted = true
             }
@@ -167,6 +202,113 @@ object DatabaseService {
             conn?.rollback()
             Result.failure(e)
         } finally { conn?.close() }
+    }
+
+    suspend fun deleteApplication(appId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        var conn: Connection? = null
+        try {
+            conn = getConnection()
+            conn.autoCommit = false
+
+            // 1. Get DoneeID and DonorID for this application
+            var doneeId: String? = null
+            var donorId: String? = null
+            conn.prepareStatement("SELECT DoneeID, DonorID FROM application WHERE ApplicationID = ?").use { ps ->
+                ps.setString(1, appId)
+                ps.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        doneeId = rs.getString("DoneeID")
+                        donorId = rs.getString("DonorID")
+                    }
+                }
+            }
+
+            if (doneeId == null || donorId == null) throw Exception("Application not found.")
+
+            // 2. Delete linked vehicles (PassengerCar and DonatedVehicle)
+            // MySQL/MariaDB often requires manual cleanup of child tables if foreign keys are not ON DELETE CASCADE
+            val donateIds = mutableListOf<String>()
+            conn.prepareStatement("SELECT DonateID FROM donatedvehicle WHERE ApplicationID = ?").use { ps ->
+                ps.setString(1, appId)
+                ps.executeQuery().use { rs -> while (rs.next()) donateIds.add(rs.getString(1)) }
+            }
+
+            for (did in donateIds) {
+                conn.prepareStatement("DELETE FROM passengercar WHERE DonateID = ?").use { ps ->
+                    ps.setString(1, did); ps.executeUpdate()
+                }
+            }
+            conn.prepareStatement("DELETE FROM donatedvehicle WHERE ApplicationID = ?").use { ps ->
+                ps.setString(1, appId); ps.executeUpdate()
+            }
+
+            // 3. Delete the Application record
+            conn.prepareStatement("DELETE FROM application WHERE ApplicationID = ?").use { ps ->
+                ps.setString(1, appId); ps.executeUpdate()
+            }
+
+            // 4. Conditional deletion of Donee
+            var doneeUsage = 0
+            conn.prepareStatement("SELECT COUNT(*) FROM application WHERE DoneeID = ?").use { ps ->
+                ps.setString(1, doneeId)
+                ps.executeQuery().use { rs -> if (rs.next()) doneeUsage = rs.getInt(1) }
+            }
+            if (doneeUsage == 0) {
+                conn.prepareStatement("DELETE FROM donee WHERE DoneeID = ?").use { ps ->
+                    ps.setString(1, doneeId); ps.executeUpdate()
+                }
+            }
+
+            // 5. Conditional deletion of Donor
+            var donorUsage = 0
+            conn.prepareStatement("SELECT COUNT(*) FROM application WHERE DonorID = ?").use { ps ->
+                ps.setString(1, donorId)
+                ps.executeQuery().use { rs -> if (rs.next()) donorUsage = rs.getInt(1) }
+            }
+            if (donorUsage == 0) {
+                conn.prepareStatement("DELETE FROM donor WHERE DonorID = ?").use { ps ->
+                    ps.setString(1, donorId); ps.executeUpdate()
+                }
+            }
+
+            conn.commit()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            conn?.rollback()
+            Result.failure(e)
+        } finally { conn?.close() }
+    }
+
+    suspend fun fetchVehiclesDetailed(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
+        val motor = mutableListOf<Map<String, String>>()
+        val passenger = mutableListOf<Map<String, String>>()
+        try {
+            getConnection().use { conn ->
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT * FROM donatedvehicle WHERE CarType = 'Motor Vehicle'").use { rs ->
+                        val md = rs.metaData
+                        while (rs.next()) {
+                            val map = mutableMapOf<String, String>()
+                            for (i in 1..md.columnCount) map[md.getColumnName(i)] = rs.getString(i) ?: ""
+                            motor.add(map)
+                        }
+                    }
+                    stmt.executeQuery("""
+                        SELECT dv.*, pc.VIN, pc.YearModel, pc.Color, pc.RegistrationDate, pc.VehicleWeight, pc.EngineNumber, pc.EngineDisplacement, pc.FuelType 
+                        FROM donatedvehicle dv 
+                        JOIN passengercar pc ON dv.DonateID = pc.DonateID
+                    """).use { rs ->
+                        val md = rs.metaData
+                        while (rs.next()) {
+                            val map = mutableMapOf<String, String>()
+                            for (i in 1..md.columnCount) map[md.getColumnName(i)] = rs.getString(i) ?: ""
+                            passenger.add(map)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) { e.printStackTrace() }
+        Pair(motor, passenger)
     }
 
     suspend fun executeRawSql(query: String): RawSqlResult = withContext(Dispatchers.IO) {
