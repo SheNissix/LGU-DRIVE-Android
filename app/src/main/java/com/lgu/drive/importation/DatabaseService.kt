@@ -59,14 +59,16 @@ object DatabaseService {
 
     suspend fun fetchHistory(): List<List<String>> = withContext(Dispatchers.IO) {
         val records = mutableListOf<List<String>>()
+        // Updated query to group vehicles by application
         val query = """
             SELECT a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, 
-                   dv.DonateID, dv.VehicleDescription, dv.CarType, dv.Quantity, COALESCE(pc.VIN, 'General Cargo')
+                   GROUP_CONCAT(dv.CarType SEPARATOR ' / ') as CombinedType,
+                   GROUP_CONCAT(dv.VehicleDescription SEPARATOR ' | ') as CombinedDesc
             FROM application a
             JOIN donee dn ON a.DoneeID = dn.DoneeID
             JOIN donor dr ON a.DonorID = dr.DonorID
             JOIN donatedvehicle dv ON a.ApplicationID = dv.ApplicationID
-            LEFT JOIN passengercar pc ON dv.DonateID = pc.DonateID
+            GROUP BY a.ApplicationID
             ORDER BY a.ApplicationID DESC
         """
         try {
@@ -74,10 +76,21 @@ object DatabaseService {
                 conn.createStatement().use { stmt ->
                     stmt.executeQuery(query).use { rs ->
                         while (rs.next()) {
+                            // Logic for combined category
+                            val rawType = rs.getString(5) ?: ""
+                            val types = rawType.split(" / ").distinct()
+                            val displayType = if (types.size > 1) "Motor Vehicle / Passenger Car" else types.first()
+
                             records.add(listOf(
-                                rs.getString(1) ?: "", rs.getString(2) ?: "", rs.getString(3) ?: "",
-                                rs.getString(4) ?: "", rs.getString(5) ?: "", rs.getString(6) ?: "",
-                                rs.getString(7) ?: "", rs.getString(8) ?: "", rs.getString(9) ?: ""
+                                rs.getString(1) ?: "", // ApplicationID
+                                rs.getString(2) ?: "", // ApplicationDate
+                                rs.getString(3) ?: "", // DoneeName
+                                rs.getString(4) ?: "", // DonorName
+                                "", // Legacy AssetID placeholder
+                                rs.getString(6) ?: "", // CombinedDesc
+                                displayType, // DisplayType (Badge)
+                                "", // Legacy Qty placeholder
+                                ""  // Legacy VIN placeholder
                             ))
                         }
                     }
@@ -85,6 +98,36 @@ object DatabaseService {
             }
         } catch (e: Exception) { e.printStackTrace() }
         records
+    }
+
+    // New function to fetch all specific vehicle details for a single application
+    suspend fun fetchApplicationDetails(appId: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
+        val details = mutableListOf<Map<String, String>>()
+        val query = """
+            SELECT dv.*, pc.VIN, pc.YearModel, pc.Color, pc.RegistrationDate, pc.VehicleWeight, pc.EngineNumber, pc.EngineDisplacement, pc.FuelType 
+            FROM donatedvehicle dv 
+            LEFT JOIN passengercar pc ON dv.DonateID = pc.DonateID
+            WHERE dv.ApplicationID = ?
+        """
+        try {
+            getConnection().use { conn ->
+                conn.prepareStatement(query).use { ps ->
+                    ps.setString(1, appId)
+                    ps.executeQuery().use { rs ->
+                        val md = rs.metaData
+                        while (rs.next()) {
+                            val map = mutableMapOf<String, String>()
+                            for (i in 1..md.columnCount) {
+                                val colName = md.getColumnName(i)
+                                map[colName] = rs.getString(i) ?: "N/A"
+                            }
+                            details.add(map)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) { e.printStackTrace() }
+        details
     }
 
     suspend fun submitVehicleApplication(
@@ -223,7 +266,6 @@ object DatabaseService {
             if (doneeId == null || donorId == null) throw Exception("Application not found.")
 
             // 2. Delete linked vehicles (PassengerCar and DonatedVehicle)
-            // MySQL/MariaDB often requires manual cleanup of child tables if foreign keys are not ON DELETE CASCADE
             val donateIds = mutableListOf<String>()
             conn.prepareStatement("SELECT DonateID FROM donatedvehicle WHERE ApplicationID = ?").use { ps ->
                 ps.setString(1, appId)

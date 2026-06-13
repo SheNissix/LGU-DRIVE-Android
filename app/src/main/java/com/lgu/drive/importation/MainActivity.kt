@@ -447,7 +447,7 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
                                         Spacer(Modifier.height(8.dp))
                                     }
                                     OutlinedButton(onClick = {
-                                        passengerCars.add(mutableMapOf("desc" to "", "tariff" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "Gasoline"))
+                                        passengerCars.add(mutableMapOf("desc" to "", "tariff" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
                                     }, modifier = Modifier.align(Alignment.End)) {
                                         Text("+ Add Passenger Car")
                                     }
@@ -617,6 +617,9 @@ fun HistoryLogScreen(refreshTrigger: Long) {
     var selectedEntityForDetail by remember { mutableStateOf<Map<String, String>?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<String?>(null) }
     
+    // Detailed list of vehicles for the selected application
+    var selectedAppVehicleDetails by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
+    
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -646,8 +649,7 @@ fun HistoryLogScreen(refreshTrigger: Long) {
             app[0].contains(searchQuery, ignoreCase = true) || // App ID
             app[2].contains(searchQuery, ignoreCase = true) || // Donee Name
             app[3].contains(searchQuery, ignoreCase = true) || // Donor Name
-            app[4].contains(searchQuery, ignoreCase = true) || // Asset ID
-            app[8].contains(searchQuery, ignoreCase = true)    // VIN
+            app[5].contains(searchQuery, ignoreCase = true)    // Description
         }
 
         val matchedDonors = donorsDetailed.filter { it["DonorID"]?.equals(searchQuery, ignoreCase = true) == true || it["DonorName"]?.contains(searchQuery, ignoreCase = true) == true }
@@ -666,12 +668,17 @@ fun HistoryLogScreen(refreshTrigger: Long) {
         }
     }
 
-    // Application Details Dialog
+    // Application Details Dialog (Refined for Multiple Vehicles)
     if (selectedLogForDetail != null) {
+        val log = selectedLogForDetail!!
+        LaunchedEffect(log[0]) {
+            selectedAppVehicleDetails = DatabaseService.fetchApplicationDetails(log[0])
+        }
+
         AlertDialog(
-            onDismissRequest = { selectedLogForDetail = null },
+            onDismissRequest = { selectedLogForDetail = null; selectedAppVehicleDetails = emptyList() },
             confirmButton = {
-                TextButton(onClick = { selectedLogForDetail = null }) { Text("CLOSE") }
+                TextButton(onClick = { selectedLogForDetail = null; selectedAppVehicleDetails = emptyList() }) { Text("CLOSE") }
             },
             dismissButton = {
                 TextButton(
@@ -681,17 +688,45 @@ fun HistoryLogScreen(refreshTrigger: Long) {
             },
             title = { Text("Application Details", fontWeight = FontWeight.Bold) },
             text = {
-                val log = selectedLogForDetail!!
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DetailRow("Application ID", log[0])
-                    DetailRow("Date Submitted", log[1])
-                    DetailRow("Donor Name", log[3])
-                    DetailRow("Donee Name", log[2])
-                    DetailRow("Asset ID", log[4])
-                    DetailRow("Description", log[5])
-                    DetailRow("Vehicle Type", log[6])
-                    DetailRow("Quantity", log[7])
-                    if (log[8] != "General Cargo") DetailRow("VIN", log[8])
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Header Info
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        DetailRow("Application ID", log[0])
+                        DetailRow("Date Submitted", log[1])
+                        DetailRow("Donor Name", log[3])
+                        DetailRow("Donee Name", log[2])
+                    }
+                    
+                    HorizontalDivider()
+                    Text("Included Vehicles", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    
+                    if (selectedAppVehicleDetails.isEmpty()) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
+                    } else {
+                        selectedAppVehicleDetails.forEachIndexed { index, vehicle ->
+                            Card(
+                                shape = RoundedCornerShape(4.dp),
+                                border = BorderStroke(0.5.dp, Color.LightGray),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("Vehicle #${index + 1}: ${vehicle["CarType"]}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                                    DetailRow("Asset ID", vehicle["DonateID"] ?: "N/A")
+                                    DetailRow("Description", vehicle["VehicleDescription"] ?: "N/A")
+                                    DetailRow("Origin", vehicle["Origin"] ?: "N/A")
+                                    
+                                    if (vehicle["CarType"] == "Passenger Car") {
+                                        DetailRow("VIN", vehicle["VIN"] ?: "N/A")
+                                        DetailRow("Year", vehicle["YearModel"] ?: "N/A")
+                                        DetailRow("Fuel Type", vehicle["FuelType"] ?: "N/A")
+                                    } else {
+                                        DetailRow("Quantity", vehicle["Quantity"] ?: "1")
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         )
