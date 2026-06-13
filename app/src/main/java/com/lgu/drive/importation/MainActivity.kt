@@ -119,9 +119,11 @@ fun ModernAppLayoutContainer() {
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(tab.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = (tab.route != "form")
+                                }
                                 launchSingleTop = true
-                                restoreState = true
+                                restoreState = (tab.route != "form")
                             }
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -577,7 +579,11 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
                             DatabaseService.submitVehicleApplication(payload, if(isMotorVehicleSelected) motorVehicles else emptyList(), if(isPassengerCarSelected) passengerCarsCleaned else emptyList())
                                 .onSuccess { id ->
                                     Toast.makeText(context, "Application submitted: $id", Toast.LENGTH_LONG).show()
-                                    navController.navigate("history")
+                                    clearFields() // Reset UI state immediately
+                                    currentStep = 0 // Go back to start
+                                    navController.navigate("history") {
+                                        popUpTo("form") { inclusive = true }
+                                    }
                                 }
                                 .onFailure { tx -> Toast.makeText(context, "Error: ${tx.message}", Toast.LENGTH_LONG).show() }
                         }
