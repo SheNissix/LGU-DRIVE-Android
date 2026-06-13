@@ -246,7 +246,7 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val steps = listOf("Consignee", "Donor", "Vehicles", "Review")
+            val steps = listOf("Donee", "Donor", "Vehicles", "Review")
             steps.forEachIndexed { index, label ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
@@ -313,7 +313,7 @@ fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long
                     }
                     1 -> { // Step 2: Donor
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            Text("2. Donor / Supplier Entity", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text("2. Donor / Supplier Profile", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             var searchExpanded by remember { mutableStateOf(false) }
                             Box {
                                 TextButton(onClick = { searchExpanded = true }) { 
