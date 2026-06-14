@@ -7,13 +7,14 @@ import java.sql.DriverManager
 import java.util.Properties
 
 object DatabaseService {
+    // REVERTED: Back to MariaDB since your app already has this installed!
     private const val URL = "jdbc:mariadb://zephyr.proxy.rlwy.net:37168/importationform"
     private const val USER = "root"
     private const val PASS = "aZLUGLIFlwAzyDqsEsEGIavWAqsnJaxc"
 
     init {
         try {
-            Class.forName("org.mariadb.jdbc.Driver")
+            Class.forName("org.mariadb.jdbc.Driver") // REVERTED
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -45,9 +46,8 @@ object DatabaseService {
         try {
             val conn = getConnection()
             conn.createStatement().use { stmt ->
-                // Migration: Ensure Donor table has ContactPerson
                 try { stmt.execute("ALTER TABLE donor ADD COLUMN ContactPerson VARCHAR(255) AFTER DonorAddress") } catch (e: Exception) {}
-                
+
                 stmt.executeQuery("SELECT DonorID, DonorName, DonorAddress, DonorTelNo, DonorFaxNo, DonorEmail FROM donor").use { rs ->
                     while (rs.next()) {
                         donors.add(mapOf(
@@ -96,15 +96,15 @@ object DatabaseService {
                         val displayType = if (types.size > 1) "Motor Vehicle / Passenger Car" else if(types.isEmpty()) "Unknown" else types.first()
 
                         records.add(listOf(
-                            rs.getString(1) ?: "", // 0: ApplicationID
-                            rs.getString(2) ?: "", // 1: ApplicationDate
-                            rs.getString(3) ?: "", // 2: DoneeName
-                            rs.getString(4) ?: "", // 3: DonorName
-                            "", // 4: Placeholder
-                            rs.getString(6) ?: "", // 5: CombinedDesc
-                            displayType, // 6: DisplayType (Badge)
-                            rs.getString(7) ?: "", // 7: DoneeID
-                            rs.getString(8) ?: ""  // 8: DonorID
+                            rs.getString(1) ?: "",
+                            rs.getString(2) ?: "",
+                            rs.getString(3) ?: "",
+                            rs.getString(4) ?: "",
+                            "",
+                            rs.getString(6) ?: "",
+                            displayType,
+                            rs.getString(7) ?: "",
+                            rs.getString(8) ?: ""
                         ))
                     }
                 }
@@ -113,40 +113,99 @@ object DatabaseService {
         records
     }
 
-    suspend fun fetchApplicationDetails(appId: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
-        val details = mutableListOf<Map<String, String>>()
-        val query = """
-            SELECT dv.DonateID, dv.VehicleDescription, dv.TariffCode, dv.Origin, dv.Quantity, dv.CarType,
-                   pc.VIN, pc.YearModel, pc.Color, pc.RegistrationDate, pc.VehicleWeight, pc.EngineNumber, pc.EngineDisplacement, pc.FuelType 
-            FROM donatedvehicle dv 
-            LEFT JOIN passengercar pc ON dv.DonateID = pc.DonateID
-            WHERE dv.ApplicationID = ?
-        """
+    // Clean, exact explicit mapping using lowercase normalizers
+    suspend fun fetchVehiclesDetailed(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
+        val motor = mutableListOf<Map<String, String>>()
+        val passenger = mutableListOf<Map<String, String>>()
         try {
             val conn = getConnection()
-            conn.prepareStatement(query).use { ps ->
-                ps.setString(1, appId)
-                ps.executeQuery().use { rs ->
+
+            // 1. Fetch Passenger Cars Dynamically
+            val passCarRows = mutableListOf<Map<String, String>>()
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT * FROM passengercar").use { rs ->
+                    val meta = rs.metaData
+                    val cols = meta.columnCount
                     while (rs.next()) {
-                        details.add(mapOf(
-                            "DonateID" to (rs.getString(1) ?: ""), "VehicleDescription" to (rs.getString(2) ?: ""),
-                            "TariffCode" to (rs.getString(3) ?: ""), "Origin" to (rs.getString(4) ?: ""),
-                            "Quantity" to (rs.getString(5) ?: "1"), "CarType" to (rs.getString(6) ?: ""),
-                            "VIN" to (rs.getString(7) ?: "N/A"), "YearModel" to (rs.getString(8) ?: "N/A"),
-                            "Color" to (rs.getString(9) ?: "N/A"), "RegistrationDate" to (rs.getString(10) ?: "N/A"),
-                            "VehicleWeight" to (rs.getString(11) ?: "N/A"), "EngineNumber" to (rs.getString(12) ?: "N/A"),
-                            "EngineDisplacement" to (rs.getString(13) ?: "N/A"), "FuelType" to (rs.getString(14) ?: "N/A")
-                        ))
+                        val row = mutableMapOf<String, String>()
+                        for (i in 1..cols) {
+                            val rawLabel = meta.getColumnLabel(i).lowercase()
+                            val cleanLabel = if (rawLabel.contains(".")) rawLabel.substringAfterLast(".") else rawLabel
+                            row[cleanLabel] = rs.getString(i) ?: ""
+                        }
+                        passCarRows.add(row)
+                    }
+                }
+            }
+
+            // 2. Fetch Donated Vehicles Dynamically
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT * FROM donatedvehicle").use { rs ->
+                    val meta = rs.metaData
+                    val cols = meta.columnCount
+                    while (rs.next()) {
+                        val row = mutableMapOf<String, String>()
+                        for (i in 1..cols) {
+                            val rawLabel = meta.getColumnLabel(i).lowercase()
+                            val cleanLabel = if (rawLabel.contains(".")) rawLabel.substringAfterLast(".") else rawLabel
+                            row[cleanLabel] = rs.getString(i) ?: ""
+                        }
+
+                        // Exact mappings based on expected MySQL lowercase returns
+                        val donateId = row["donateid"] ?: ""
+                        val appId = row["applicationid"] ?: ""
+                        val desc = row["vehicledescription"] ?: "N/A"
+                        // Explicitly targeting vehicletariff
+                        val tariff = row["vehicletariff"] ?: row["tariffcode"] ?: "N/A"
+                        val origin = row["origin"] ?: "N/A"
+                        val qty = row["quantity"] ?: "1"
+
+                        val pcRow = passCarRows.find { it["donateid"] == donateId }
+
+                        if (pcRow != null) {
+                            passenger.add(mapOf(
+                                "DonateID" to donateId,
+                                "ApplicationID" to appId,
+                                "CarType" to "Passenger Car",
+                                "VehicleDescription" to desc,
+                                "TariffCode" to tariff,
+                                "Origin" to origin,
+                                "Quantity" to qty,
+                                "VIN" to (pcRow["vin"] ?: "N/A"),
+                                "YearModel" to (pcRow["yearmodel"] ?: pcRow["year"] ?: "N/A"),
+                                "Color" to (pcRow["color"] ?: "N/A"),
+                                "RegistrationDate" to (pcRow["registrationdate"] ?: pcRow["regdate"] ?: "N/A"),
+                                "VehicleWeight" to (pcRow["vehicleweight"] ?: pcRow["weight"] ?: "N/A"),
+                                "EngineNumber" to (pcRow["enginenumber"] ?: pcRow["engineno"] ?: "N/A"),
+                                "EngineDisplacement" to (pcRow["enginedisplacement"] ?: pcRow["displacement"] ?: "N/A"),
+                                "FuelType" to (pcRow["fueltype"] ?: "N/A")
+                            ))
+                        } else {
+                            motor.add(mapOf(
+                                "DonateID" to donateId,
+                                "ApplicationID" to appId,
+                                "CarType" to "Motor Vehicle",
+                                "VehicleDescription" to desc,
+                                "TariffCode" to tariff,
+                                "Origin" to origin,
+                                "Quantity" to qty
+                            ))
+                        }
                     }
                 }
             }
         } catch (e: Exception) { e.printStackTrace() }
-        details
+        Pair(motor, passenger)
+    }
+
+    suspend fun fetchApplicationDetails(appId: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
+        val (mv, pc) = fetchVehiclesDetailed()
+        (mv + pc).filter { it["ApplicationID"] == appId }
     }
 
     suspend fun submitVehicleApplication(
-        formData: Map<String, Any>, 
-        motorVehicles: List<Map<String, String>>, 
+        formData: Map<String, Any>,
+        motorVehicles: List<Map<String, String>>,
         passengerCars: List<Map<String, String>>
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
@@ -162,7 +221,7 @@ object DatabaseService {
                     }
                 }
                 val id = String.format("DON%04d", maxNum + 1)
-                
+
                 conn.prepareStatement("INSERT INTO donee VALUES (?,?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DoneeName"] as String)
                     ps.setString(3, formData["DoneeAddress"] as String); ps.setString(4, formData["ContactPerson"] as String)
@@ -209,7 +268,7 @@ object DatabaseService {
             for (mv in motorVehicles) {
                 val desc = mv["desc"] ?: ""
                 if (desc.isBlank()) continue
-                
+
                 var maxAssetNum = 0
                 conn.createStatement().use { stmt ->
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
@@ -217,7 +276,7 @@ object DatabaseService {
                     }
                 }
                 val donateId = String.format("CAR%05d", maxAssetNum + 1)
-                
+
                 conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, donateId); ps.setString(2, desc)
                     ps.setString(3, mv["tariffCode"]?.ifBlank { "0" } ?: "0")
@@ -326,46 +385,6 @@ object DatabaseService {
             sharedConn?.rollback()
             Result.failure(e)
         }
-    }
-
-    suspend fun fetchVehiclesDetailed(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
-        val motor = mutableListOf<Map<String, String>>()
-        val passenger = mutableListOf<Map<String, String>>()
-        try {
-            val conn = getConnection()
-            conn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT DonateID, VehicleDescription, TariffCode, Origin, Quantity, CarType, ApplicationID FROM donatedvehicle WHERE CarType = 'Motor Vehicle'").use { rs ->
-                    while (rs.next()) {
-                        motor.add(mapOf(
-                            "DonateID" to (rs.getString(1) ?: ""), "VehicleDescription" to (rs.getString(2) ?: ""),
-                            "TariffCode" to (rs.getString(3) ?: ""), "Origin" to (rs.getString(4) ?: ""),
-                            "Quantity" to (rs.getString(5) ?: ""), "CarType" to (rs.getString(6) ?: ""),
-                            "ApplicationID" to (rs.getString(7) ?: "")
-                        ))
-                    }
-                }
-                stmt.executeQuery("""
-                    SELECT dv.DonateID, dv.VehicleDescription, dv.TariffCode, dv.Origin, dv.Quantity, dv.CarType, dv.ApplicationID,
-                           pc.VIN, pc.YearModel, pc.Color, pc.RegistrationDate, pc.VehicleWeight, pc.EngineNumber, pc.EngineDisplacement, pc.FuelType 
-                    FROM donatedvehicle dv 
-                    JOIN passengercar pc ON dv.DonateID = pc.DonateID
-                """).use { rs ->
-                    while (rs.next()) {
-                        passenger.add(mapOf(
-                            "DonateID" to (rs.getString(1) ?: ""), "VehicleDescription" to (rs.getString(2) ?: ""),
-                            "TariffCode" to (rs.getString(3) ?: ""), "Origin" to (rs.getString(4) ?: ""),
-                            "Quantity" to (rs.getString(5) ?: ""), "CarType" to (rs.getString(6) ?: ""),
-                            "ApplicationID" to (rs.getString(7) ?: ""), "VIN" to (rs.getString(8) ?: ""),
-                            "YearModel" to (rs.getString(9) ?: ""), "Color" to (rs.getString(10) ?: ""),
-                            "RegistrationDate" to (rs.getString(11) ?: ""), "VehicleWeight" to (rs.getString(12) ?: ""),
-                            "EngineNumber" to (rs.getString(13) ?: ""), "EngineDisplacement" to (rs.getString(14) ?: ""),
-                            "FuelType" to (rs.getString(15) ?: "")
-                        ))
-                    }
-                }
-            }
-        } catch (e: Exception) { e.printStackTrace() }
-        Pair(motor, passenger)
     }
 
     suspend fun executeRawSql(query: String): RawSqlResult = withContext(Dispatchers.IO) {

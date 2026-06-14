@@ -707,8 +707,8 @@ fun HistoryLogScreen(refreshTrigger: Long) {
                                 "Application" -> listOf("APPLICATION ID / DATE", "DONOR / DONEE", "VEHICLE TYPE")
                                 "Donor" -> listOf("DONOR ID", "NAME", "ADDRESS", "TELEPHONE", "FAX", "EMAIL")
                                 "Donee" -> listOf("DONEE ID", "NAME", "ADDRESS", "CONTACT PERSON", "TELEPHONE", "FAX", "EMAIL")
-                                "Motor Vehicle" -> listOf("CAR ID", "DESCRIPTION", "VEHICLE TARIFF", "ORIGIN", "QUANTITY", "APP ID")
-                                "Passenger Car" -> listOf("VIN", "DONATEID", "YEAR MODEL", "COLOR", "REG. DATE", "WEIGHT", "ENGINE NO", "DISPL.", "FUEL")
+                                "Motor Vehicle" -> listOf("DONATE ID", "DESCRIPTION", "VEHICLE TARIFF", "ORIGIN", "QUANTITY", "APP ID")
+                                "Passenger Car" -> listOf("VIN", "DONATE ID", "YEAR MODEL", "COLOR", "REG. DATE", "WEIGHT", "ENGINE NO", "DISPL.", "FUEL")
                                 else -> listOf("ID", "NAME", "TYPE")
                             }
                             Row(modifier = Modifier.then(if (useScroll) Modifier.width(2200.dp) else Modifier.fillMaxWidth()).background(Color(0xFFF1F3F5)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
