@@ -15,126 +15,267 @@
 12    <uses-permission android:name="android.permission.INTERNET" />
 12-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:5:5-67
 12-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:5:22-64
-13
-14    <permission
-14-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\023608bf63fb28e4b04f818914508a63\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
-15        android:name="com.lgu.drive.importation.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-15-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\023608bf63fb28e4b04f818914508a63\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
-16        android:protectionLevel="signature" />
-16-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\023608bf63fb28e4b04f818914508a63\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
-17
-18    <uses-permission android:name="com.lgu.drive.importation.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-18-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\023608bf63fb28e4b04f818914508a63\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
-18-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\023608bf63fb28e4b04f818914508a63\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+13    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+13-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:24:5-79
+13-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:24:22-76
+14    <uses-permission android:name="android.permission.WAKE_LOCK" />
+14-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:25:5-68
+14-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:25:22-65
+15    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" />
+15-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:26:5-110
+15-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:26:22-107
+16    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+16-->[com.google.android.gms:play-services-measurement-impl:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa0cc5901c6ed8d9f799abccedaae6e1\transformed\play-services-measurement-impl-23.2.0\AndroidManifest.xml:27:5-79
+16-->[com.google.android.gms:play-services-measurement-impl:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa0cc5901c6ed8d9f799abccedaae6e1\transformed\play-services-measurement-impl-23.2.0\AndroidManifest.xml:27:22-76
+17    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" />
+17-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:26:5-88
+17-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:26:22-85
+18    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" />
+18-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:27:5-82
+18-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:27:22-79
 19
-20    <application
-20-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:7:5-25:19
-21        android:allowBackup="true"
-21-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:8:9-35
-22        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-22-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\023608bf63fb28e4b04f818914508a63\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
-23        android:debuggable="true"
-24        android:extractNativeLibs="false"
-24-->INJECTED
-25        android:icon="@mipmap/ic_launcher"
-25-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:9:9-43
-26        android:label="LGU-Drive"
-26-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:11:9-34
-27        android:roundIcon="@mipmap/ic_launcher_round"
-27-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:10:9-54
-28        android:supportsRtl="true"
-28-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:12:9-35
-29        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-29-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:13:9-72
-30        android:usesCleartextTraffic="true"
-30-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:14:9-44
-31        tools:targetApi="31" >
-31-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:15:9-29
-32        <activity
-32-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:16:9-24:20
-33            android:name="com.lgu.drive.importation.MainActivity"
-33-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:17:13-41
-34            android:exported="true"
-34-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:18:13-36
-35            android:windowSoftInputMode="adjustResize" >
-35-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:19:13-55
-36            <intent-filter>
-36-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:20:13-23:29
-37                <action android:name="android.intent.action.MAIN" />
-37-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:21:17-69
-37-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:21:25-66
-38
-39                <category android:name="android.intent.category.LAUNCHER" />
-39-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:22:17-77
-39-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:22:27-74
-40            </intent-filter>
-41        </activity>
-42
-43        <provider
-43-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
-44            android:name="androidx.startup.InitializationProvider"
-44-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
-45            android:authorities="com.lgu.drive.importation.androidx-startup"
-45-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
-46            android:exported="false" >
-46-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
-47            <meta-data
-47-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
-48                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-48-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
-49                android:value="androidx.startup" />
-49-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d8ce36e7dce0474e8a8c91c9afd01ddb\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
-50            <meta-data
-50-->[androidx.lifecycle:lifecycle-process:2.8.4] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d2a479bea59b383c2fb9f112918271a6\transformed\lifecycle-process-2.8.4\AndroidManifest.xml:29:13-31:52
-51                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-51-->[androidx.lifecycle:lifecycle-process:2.8.4] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d2a479bea59b383c2fb9f112918271a6\transformed\lifecycle-process-2.8.4\AndroidManifest.xml:30:17-78
-52                android:value="androidx.startup" />
-52-->[androidx.lifecycle:lifecycle-process:2.8.4] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\d2a479bea59b383c2fb9f112918271a6\transformed\lifecycle-process-2.8.4\AndroidManifest.xml:31:17-49
-53            <meta-data
-53-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
-54                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-54-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
-55                android:value="androidx.startup" />
-55-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
-56        </provider>
-57
-58        <receiver
-58-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
-59            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-59-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
-60            android:directBootAware="false"
-60-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
-61            android:enabled="true"
-61-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
-62            android:exported="true"
-62-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
-63            android:permission="android.permission.DUMP" >
-63-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
-64            <intent-filter>
-64-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
-65                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-65-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
-65-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
-66            </intent-filter>
-67            <intent-filter>
-67-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
-68                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-68-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
-68-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
-69            </intent-filter>
-70            <intent-filter>
-70-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
-71                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-71-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
-71-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
-72            </intent-filter>
-73            <intent-filter>
-73-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
-74                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-74-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
-74-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\c87b2266337c045b838329d2f690e212\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
-75            </intent-filter>
-76        </receiver>
-77    </application>
-78
-79</manifest>
+20    <permission
+20-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ce44c51b6d7d9c4da6d7672206888f9f\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+21        android:name="com.lgu.drive.importation.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+21-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ce44c51b6d7d9c4da6d7672206888f9f\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+22        android:protectionLevel="signature" />
+22-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ce44c51b6d7d9c4da6d7672206888f9f\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+23
+24    <uses-permission android:name="com.lgu.drive.importation.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+24-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ce44c51b6d7d9c4da6d7672206888f9f\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+24-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ce44c51b6d7d9c4da6d7672206888f9f\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+25
+26    <application
+26-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:7:5-25:19
+27        android:allowBackup="true"
+27-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:8:9-35
+28        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+28-->[androidx.core:core:1.13.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ce44c51b6d7d9c4da6d7672206888f9f\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+29        android:debuggable="true"
+30        android:extractNativeLibs="false"
+30-->INJECTED
+31        android:icon="@mipmap/ic_launcher"
+31-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:9:9-43
+32        android:label="LGU-Drive"
+32-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:11:9-34
+33        android:roundIcon="@mipmap/ic_launcher_round"
+33-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:10:9-54
+34        android:supportsRtl="true"
+34-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:12:9-35
+35        android:testOnly="true"
+36        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+36-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:13:9-72
+37        android:usesCleartextTraffic="true"
+37-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:14:9-44
+38        tools:targetApi="31" >
+38-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:15:9-29
+39        <activity
+39-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:16:9-24:20
+40            android:name="com.lgu.drive.importation.MainActivity"
+40-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:17:13-41
+41            android:exported="true"
+41-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:18:13-36
+42            android:windowSoftInputMode="adjustResize" >
+42-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:19:13-55
+43            <intent-filter>
+43-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:20:13-23:29
+44                <action android:name="android.intent.action.MAIN" />
+44-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:21:17-69
+44-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:21:25-66
+45
+46                <category android:name="android.intent.category.LAUNCHER" />
+46-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:22:17-77
+46-->C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\src\main\AndroidManifest.xml:22:27-74
+47            </intent-filter>
+48        </activity>
+49
+50        <receiver
+50-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:29:9-33:20
+51            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+51-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:30:13-85
+52            android:enabled="true"
+52-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:31:13-35
+53            android:exported="false" >
+53-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:32:13-37
+54        </receiver>
+55
+56        <service
+56-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:35:9-38:40
+57            android:name="com.google.android.gms.measurement.AppMeasurementService"
+57-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:36:13-84
+58            android:enabled="true"
+58-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:37:13-35
+59            android:exported="false" />
+59-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:38:13-37
+60        <service
+60-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:39:9-43:72
+61            android:name="com.google.android.gms.measurement.AppMeasurementJobService"
+61-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:40:13-87
+62            android:enabled="true"
+62-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:41:13-35
+63            android:exported="false"
+63-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:42:13-37
+64            android:permission="android.permission.BIND_JOB_SERVICE" />
+64-->[com.google.android.gms:play-services-measurement:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\b14af00f61db91644e2c515aae6b9a12\transformed\play-services-measurement-23.2.0\AndroidManifest.xml:43:13-69
+65        <service
+65-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:30:9-36:19
+66            android:name="com.google.firebase.components.ComponentDiscoveryService"
+66-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:31:13-84
+67            android:directBootAware="true"
+67-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:32:13-43
+68            android:exported="false" >
+68-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:32:13-37
+69            <meta-data
+69-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:33:13-35:85
+70                android:name="com.google.firebase.components:com.google.firebase.analytics.connector.internal.AnalyticsConnectorRegistrar"
+70-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:34:17-139
+71                android:value="com.google.firebase.components.ComponentRegistrar" />
+71-->[com.google.android.gms:play-services-measurement-api:23.2.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a7a4d0807b553d20df00e0503ef33e3e\transformed\play-services-measurement-api-23.2.0\AndroidManifest.xml:35:17-82
+72            <meta-data
+72-->[com.google.firebase:firebase-storage:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\f00bda8ab382f54794624c9f11c42b58\transformed\firebase-storage-22.0.1\AndroidManifest.xml:30:13-32:85
+73                android:name="com.google.firebase.components:com.google.firebase.storage.FirebaseStorageKtxRegistrar"
+73-->[com.google.firebase:firebase-storage:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\f00bda8ab382f54794624c9f11c42b58\transformed\firebase-storage-22.0.1\AndroidManifest.xml:31:17-118
+74                android:value="com.google.firebase.components.ComponentRegistrar" />
+74-->[com.google.firebase:firebase-storage:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\f00bda8ab382f54794624c9f11c42b58\transformed\firebase-storage-22.0.1\AndroidManifest.xml:32:17-82
+75            <meta-data
+75-->[com.google.firebase:firebase-storage:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\f00bda8ab382f54794624c9f11c42b58\transformed\firebase-storage-22.0.1\AndroidManifest.xml:33:13-35:85
+76                android:name="com.google.firebase.components:com.google.firebase.storage.StorageRegistrar"
+76-->[com.google.firebase:firebase-storage:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\f00bda8ab382f54794624c9f11c42b58\transformed\firebase-storage-22.0.1\AndroidManifest.xml:34:17-107
+77                android:value="com.google.firebase.components.ComponentRegistrar" />
+77-->[com.google.firebase:firebase-storage:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\f00bda8ab382f54794624c9f11c42b58\transformed\firebase-storage-22.0.1\AndroidManifest.xml:35:17-82
+78            <meta-data
+78-->[com.google.firebase:firebase-installations:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa261c6f5a0094583a42df4266673069\transformed\firebase-installations-19.1.0\AndroidManifest.xml:15:13-17:85
+79                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+79-->[com.google.firebase:firebase-installations:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa261c6f5a0094583a42df4266673069\transformed\firebase-installations-19.1.0\AndroidManifest.xml:16:17-130
+80                android:value="com.google.firebase.components.ComponentRegistrar" />
+80-->[com.google.firebase:firebase-installations:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa261c6f5a0094583a42df4266673069\transformed\firebase-installations-19.1.0\AndroidManifest.xml:17:17-82
+81            <meta-data
+81-->[com.google.firebase:firebase-installations:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa261c6f5a0094583a42df4266673069\transformed\firebase-installations-19.1.0\AndroidManifest.xml:18:13-20:85
+82                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+82-->[com.google.firebase:firebase-installations:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa261c6f5a0094583a42df4266673069\transformed\firebase-installations-19.1.0\AndroidManifest.xml:19:17-127
+83                android:value="com.google.firebase.components.ComponentRegistrar" />
+83-->[com.google.firebase:firebase-installations:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\fa261c6f5a0094583a42df4266673069\transformed\firebase-installations-19.1.0\AndroidManifest.xml:20:17-82
+84            <meta-data
+84-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:35:13-37:85
+85                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+85-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:36:17-109
+86                android:value="com.google.firebase.components.ComponentRegistrar" />
+86-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:37:17-82
+87            <meta-data
+87-->[com.google.firebase:firebase-appcheck:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ff564d55614a108c71646c3fb211b003\transformed\firebase-appcheck-19.1.0\AndroidManifest.xml:25:13-27:85
+88                android:name="com.google.firebase.components:com.google.firebase.appcheck.FirebaseAppCheckKtxRegistrar"
+88-->[com.google.firebase:firebase-appcheck:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ff564d55614a108c71646c3fb211b003\transformed\firebase-appcheck-19.1.0\AndroidManifest.xml:26:17-120
+89                android:value="com.google.firebase.components.ComponentRegistrar" />
+89-->[com.google.firebase:firebase-appcheck:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ff564d55614a108c71646c3fb211b003\transformed\firebase-appcheck-19.1.0\AndroidManifest.xml:27:17-82
+90            <meta-data
+90-->[com.google.firebase:firebase-appcheck:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ff564d55614a108c71646c3fb211b003\transformed\firebase-appcheck-19.1.0\AndroidManifest.xml:28:13-30:85
+91                android:name="com.google.firebase.components:com.google.firebase.appcheck.FirebaseAppCheckRegistrar"
+91-->[com.google.firebase:firebase-appcheck:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ff564d55614a108c71646c3fb211b003\transformed\firebase-appcheck-19.1.0\AndroidManifest.xml:29:17-117
+92                android:value="com.google.firebase.components.ComponentRegistrar" />
+92-->[com.google.firebase:firebase-appcheck:19.1.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\ff564d55614a108c71646c3fb211b003\transformed\firebase-appcheck-19.1.0\AndroidManifest.xml:30:17-82
+93        </service>
+94
+95        <provider
+95-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:23:9-28:39
+96            android:name="com.google.firebase.provider.FirebaseInitProvider"
+96-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:24:13-77
+97            android:authorities="com.lgu.drive.importation.firebaseinitprovider"
+97-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:25:13-72
+98            android:directBootAware="true"
+98-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:26:13-43
+99            android:exported="false"
+99-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:27:13-37
+100            android:initOrder="100" />
+100-->[com.google.firebase:firebase-common:22.0.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\dc1cbe67214f63beb8d987a3f96abc4b\transformed\firebase-common-22.0.1\AndroidManifest.xml:28:13-36
+101
+102        <activity
+102-->[com.google.android.gms:play-services-base:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\53214c45ed95ed22771782ffd7849d25\transformed\play-services-base-18.9.0\AndroidManifest.xml:20:9-22:45
+103            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+103-->[com.google.android.gms:play-services-base:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\53214c45ed95ed22771782ffd7849d25\transformed\play-services-base-18.9.0\AndroidManifest.xml:20:19-85
+104            android:exported="false"
+104-->[com.google.android.gms:play-services-base:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\53214c45ed95ed22771782ffd7849d25\transformed\play-services-base-18.9.0\AndroidManifest.xml:22:19-43
+105            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+105-->[com.google.android.gms:play-services-base:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\53214c45ed95ed22771782ffd7849d25\transformed\play-services-base-18.9.0\AndroidManifest.xml:21:19-78
+106
+107        <uses-library
+107-->[androidx.privacysandbox.ads:ads-adservices:1.1.0-beta11] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\6faec0a16a6c9a962ab6ed7f132c4325\transformed\ads-adservices-1.1.0-beta11\AndroidManifest.xml:23:9-25:40
+108            android:name="android.ext.adservices"
+108-->[androidx.privacysandbox.ads:ads-adservices:1.1.0-beta11] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\6faec0a16a6c9a962ab6ed7f132c4325\transformed\ads-adservices-1.1.0-beta11\AndroidManifest.xml:24:13-50
+109            android:required="false" />
+109-->[androidx.privacysandbox.ads:ads-adservices:1.1.0-beta11] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\6faec0a16a6c9a962ab6ed7f132c4325\transformed\ads-adservices-1.1.0-beta11\AndroidManifest.xml:25:13-37
+110
+111        <meta-data
+111-->[com.google.android.gms:play-services-basement:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\de9f500e195787ddc8e9a583ecd58a19\transformed\play-services-basement-18.9.0\AndroidManifest.xml:21:9-23:69
+112            android:name="com.google.android.gms.version"
+112-->[com.google.android.gms:play-services-basement:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\de9f500e195787ddc8e9a583ecd58a19\transformed\play-services-basement-18.9.0\AndroidManifest.xml:22:13-58
+113            android:value="@integer/google_play_services_version" />
+113-->[com.google.android.gms:play-services-basement:18.9.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\de9f500e195787ddc8e9a583ecd58a19\transformed\play-services-basement-18.9.0\AndroidManifest.xml:23:13-66
+114
+115        <provider
+115-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+116            android:name="androidx.startup.InitializationProvider"
+116-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+117            android:authorities="com.lgu.drive.importation.androidx-startup"
+117-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+118            android:exported="false" >
+118-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+119            <meta-data
+119-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+120                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+120-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+121                android:value="androidx.startup" />
+121-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\56a8c87e464e435f5a27c7b81f5f8e3e\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+122            <meta-data
+122-->[androidx.lifecycle:lifecycle-process:2.8.4] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a6cabb8efcc2da72593da1489e973000\transformed\lifecycle-process-2.8.4\AndroidManifest.xml:29:13-31:52
+123                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+123-->[androidx.lifecycle:lifecycle-process:2.8.4] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a6cabb8efcc2da72593da1489e973000\transformed\lifecycle-process-2.8.4\AndroidManifest.xml:30:17-78
+124                android:value="androidx.startup" />
+124-->[androidx.lifecycle:lifecycle-process:2.8.4] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\a6cabb8efcc2da72593da1489e973000\transformed\lifecycle-process-2.8.4\AndroidManifest.xml:31:17-49
+125            <meta-data
+125-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+126                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+126-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+127                android:value="androidx.startup" />
+127-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+128        </provider>
+129
+130        <receiver
+130-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+131            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+132            android:directBootAware="false"
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+133            android:enabled="true"
+133-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+134            android:exported="true"
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+135            android:permission="android.permission.DUMP" >
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+136            <intent-filter>
+136-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+137                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+137-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+137-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+138            </intent-filter>
+139            <intent-filter>
+139-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+140                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+140-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+140-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+141            </intent-filter>
+142            <intent-filter>
+142-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+143                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+143-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+143-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+144            </intent-filter>
+145            <intent-filter>
+145-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+146                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+146-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+146-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Elyssa\.gradle\caches\9.4.1\transforms\9610afbceba7538e4e0a52dccaea14cb\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+147            </intent-filter>
+148        </receiver>
+149    </application>
+150
+151</manifest>

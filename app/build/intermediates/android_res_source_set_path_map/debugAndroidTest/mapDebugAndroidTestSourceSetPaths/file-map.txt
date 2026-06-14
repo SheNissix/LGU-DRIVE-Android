@@ -1,0 +1,6 @@
+com.lgu.drive.importation.test.app-androidTest-0 C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\build\generated\res\resValues\androidTest\debug
+com.lgu.drive.importation.test.app-updated_navigation_xml-1 C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\build\generated\updated_navigation_xml\debugAndroidTest
+com.lgu.drive.importation.test.app-mergeDebugAndroidTestResources-2 C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.lgu.drive.importation.test.app-mergeDebugAndroidTestResources-3 C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.lgu.drive.importation.test.app-debugAndroidTest-4 C:\Users\Elyssa\StudioProjects\LGU-DRIVE-Android\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources
+gradleHome-0 C:\Users\Elyssa\.gradle

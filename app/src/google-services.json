@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1016927917548",
+    "project_id": "lgu-drive",
+    "storage_bucket": "lgu-drive.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1016927917548:android:6b35194ee06ac974b01cc9",
+        "android_client_info": {
+          "package_name": "com.lgu.drive.importation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBqX4Q9lqVvh2M8fgvd3-TdWtn2JbHpMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

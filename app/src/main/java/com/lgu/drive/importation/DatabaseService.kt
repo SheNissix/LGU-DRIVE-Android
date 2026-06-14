@@ -6,15 +6,26 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.Properties
 
+// ------------------------------------------------------------------------
+// 1. SQL ADMINISTRATION RESULT CLASS
+// ------------------------------------------------------------------------
+sealed class RawSqlResult {
+    data class SelectSuccess(val headers: List<String>, val rows: List<List<String>>) : RawSqlResult()
+    data class UpdateSuccess(val affectedRows: Int) : RawSqlResult()
+    data class Error(val message: String) : RawSqlResult()
+}
+
+// ------------------------------------------------------------------------
+// 2. DATABASE SERVICE
+// ------------------------------------------------------------------------
 object DatabaseService {
-    // REVERTED: Back to MariaDB since your app already has this installed!
     private const val URL = "jdbc:mariadb://zephyr.proxy.rlwy.net:37168/importationform"
     private const val USER = "root"
     private const val PASS = "aZLUGLIFlwAzyDqsEsEGIavWAqsnJaxc"
 
     init {
         try {
-            Class.forName("org.mariadb.jdbc.Driver") // REVERTED
+            Class.forName("org.mariadb.jdbc.Driver")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -113,14 +124,12 @@ object DatabaseService {
         records
     }
 
-    // Clean, exact explicit mapping using lowercase normalizers
     suspend fun fetchVehiclesDetailed(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
         val motor = mutableListOf<Map<String, String>>()
         val passenger = mutableListOf<Map<String, String>>()
         try {
             val conn = getConnection()
 
-            // 1. Fetch Passenger Cars Dynamically
             val passCarRows = mutableListOf<Map<String, String>>()
             conn.createStatement().use { stmt ->
                 stmt.executeQuery("SELECT * FROM passengercar").use { rs ->
@@ -138,7 +147,6 @@ object DatabaseService {
                 }
             }
 
-            // 2. Fetch Donated Vehicles Dynamically
             conn.createStatement().use { stmt ->
                 stmt.executeQuery("SELECT * FROM donatedvehicle").use { rs ->
                     val meta = rs.metaData
@@ -151,11 +159,9 @@ object DatabaseService {
                             row[cleanLabel] = rs.getString(i) ?: ""
                         }
 
-                        // Exact mappings based on expected MySQL lowercase returns
                         val donateId = row["donateid"] ?: ""
                         val appId = row["applicationid"] ?: ""
                         val desc = row["vehicledescription"] ?: "N/A"
-                        // Explicitly targeting vehicletariff
                         val tariff = row["vehicletariff"] ?: row["tariffcode"] ?: "N/A"
                         val origin = row["origin"] ?: "N/A"
                         val qty = row["quantity"] ?: "1"
@@ -409,10 +415,4 @@ object DatabaseService {
             }
         } catch (e: Exception) { RawSqlResult.Error(e.message ?: "SQL Execution Error Exception.") }
     }
-}
-
-sealed class RawSqlResult {
-    data class SelectSuccess(val headers: List<String>, val rows: List<List<String>>) : RawSqlResult()
-    data class UpdateSuccess(val affectedRows: Int) : RawSqlResult()
-    data class Error(val message: String) : RawSqlResult()
 }
