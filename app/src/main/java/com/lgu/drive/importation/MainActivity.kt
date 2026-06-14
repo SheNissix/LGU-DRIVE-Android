@@ -517,7 +517,6 @@ fun HistoryLogScreen(refreshTrigger: Long) {
     var selectedLogForDetail by remember { mutableStateOf<List<String>?>(null) }
     var selectedEntityForDetail by remember { mutableStateOf<Map<String, String>?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<String?>(null) }
-    var selectedAppVehicleDetails by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -528,8 +527,12 @@ fun HistoryLogScreen(refreshTrigger: Long) {
         logs = DatabaseService.fetchHistory()
         val (dnrs, dnes) = DatabaseService.fetchDonorsAndDoneesDetailed()
         donorsDetailed = dnrs; doneesDetailed = dnes
+
+        // Use the newly bulletproofed backend fetch
         val (mv, pc) = DatabaseService.fetchVehiclesDetailed()
-        motorVehicles = mv; passengerCars = pc
+        motorVehicles = mv
+        passengerCars = pc
+
         isLoading = false
     }
 
@@ -568,10 +571,12 @@ fun HistoryLogScreen(refreshTrigger: Long) {
 
     if (selectedLogForDetail != null) {
         val log = selectedLogForDetail!!
-        LaunchedEffect(log[0]) {
-            selectedAppVehicleDetails = emptyList() // Fast reset
-            selectedAppVehicleDetails = DatabaseService.fetchApplicationDetails(log[0])
+
+        // Instant data filtering using the guaranteed "ApplicationID" keys
+        val fastAppVehicleDetails = remember(log[0], motorVehicles, passengerCars) {
+            motorVehicles.filter { it["ApplicationID"] == log[0] } + passengerCars.filter { it["ApplicationID"] == log[0] }
         }
+
         AlertDialog(
             onDismissRequest = { selectedLogForDetail = null },
             confirmButton = { TextButton(onClick = { selectedLogForDetail = null }) { Text("CLOSE") } },
@@ -585,9 +590,10 @@ fun HistoryLogScreen(refreshTrigger: Long) {
                     }
                     HorizontalDivider()
                     Text("Included Vehicles", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                    if (selectedAppVehicleDetails.isEmpty()) CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
-                    else {
-                        selectedAppVehicleDetails.forEachIndexed { index, vehicle ->
+                    if (fastAppVehicleDetails.isEmpty()) {
+                        Text("No vehicles found attached to this application.", fontSize = 12.sp, color = Color.Gray)
+                    } else {
+                        fastAppVehicleDetails.forEachIndexed { index, vehicle ->
                             Card(shape = RoundedCornerShape(4.dp), border = BorderStroke(0.5.dp, Color.LightGray), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("Vehicle #${index + 1}: ${vehicle["CarType"]}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
@@ -727,9 +733,16 @@ fun HistoryLogScreen(refreshTrigger: Long) {
                                     when (item) {
                                         is List<*> -> {
                                             val log = item as List<String>
+
+                                            // Blue for Mixed, Green for Passenger, Orange for Motor
+                                            val isMixed = log[6] == "Motor Vehicle / Passenger Car"
+                                            val isPassenger = log[6] == "Passenger Car"
+                                            val badgeBgColor = if (isMixed) Color(0xFFE3F2FD) else if (isPassenger) Color(0xFFE8F5E9) else Color(0xFFFFE0B2)
+                                            val badgeTextColor = if (isMixed) Color(0xFF1565C0) else if (isPassenger) Color(0xFF2E7D32) else Color(0xFFE65100)
+
                                             Column(modifier = Modifier.weight(1.5f)) { HighlightedText(log[0], searchQuery, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)); Text(log[1].split(" ")[0], fontSize = 10.sp, color = Color.Gray) }
                                             Column(modifier = Modifier.weight(2f)) { HighlightedText(log[3], searchQuery, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)); HighlightedText(log[2], searchQuery, style = TextStyle(fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Light)) }
-                                            Box(modifier = Modifier.weight(1.5f).clip(RoundedCornerShape(4.dp)).background(if (log[6] == "Passenger Car") Color(0xFFE8F5E9) else Color(0xFFFFE0B2)).padding(horizontal = 6.dp, vertical = 2.dp), contentAlignment = Alignment.CenterStart) { Text(log[6], fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (log[6] == "Passenger Car") Color(0xFF2E7D32) else Color(0xFFE65100)) }
+                                            Box(modifier = Modifier.weight(1.5f).clip(RoundedCornerShape(4.dp)).background(badgeBgColor).padding(horizontal = 6.dp, vertical = 2.dp), contentAlignment = Alignment.CenterStart) { Text(log[6], fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeTextColor) }
                                             Box { IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, null) }; DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) { DropdownMenuItem(text = { Text("More Details") }, onClick = { selectedLogForDetail = log; menuExpanded = false }) } }
                                         }
                                         is Map<*, *> -> {
@@ -737,10 +750,9 @@ fun HistoryLogScreen(refreshTrigger: Long) {
                                             val viewFields = when {
                                                 map.containsKey("DonorID") -> listOf(map["DonorID"], map["DonorName"], map["DonorAddress"], map["DonorTelNo"], map["DonorFaxNo"], map["DonorEmail"])
                                                 map.containsKey("DoneeID") -> listOf(map["DoneeID"], map["DoneeName"], map["DoneeAddress"], map["ContactPerson"], map["DoneeTelNo"], map["DoneeFaxNo"], map["DoneeEmail"])
-                                                // Relying on absence of VIN ensures we safely catch Motor Vehicles
-                                                map.containsKey("DonateID") && !map.containsKey("VIN") -> listOf(map["DonateID"], map["VehicleDescription"], map["TariffCode"], map["Origin"], map["Quantity"], map["ApplicationID"])
                                                 map.containsKey("VIN") -> listOf(map["VIN"], map["DonateID"], map["YearModel"], map["Color"], map["RegistrationDate"], map["VehicleWeight"], map["EngineNumber"], map["EngineDisplacement"], map["FuelType"])
-                                                else -> listOf("N/A")
+                                                map.containsKey("DonateID") -> listOf(map["DonateID"], map["VehicleDescription"], map["TariffCode"], map["Origin"], map["Quantity"], map["ApplicationID"])
+                                                else -> listOf("ERR: Unmapped Data")
                                             }
                                             viewFields.forEachIndexed { idx, value ->
                                                 val cellModifier = when (viewCategory) {
