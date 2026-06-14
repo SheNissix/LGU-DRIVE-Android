@@ -1,9 +1,9 @@
-#Fri Jun 12 22:40:41 PST 2026
-base.0=C\:\\Users\\sheni\\Documents\\prototype\\LGU-Drive-Android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
-base.1=C\:\\Users\\sheni\\Documents\\prototype\\LGU-Drive-Android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
-base.2=C\:\\Users\\sheni\\Documents\\prototype\\LGU-Drive-Android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\14\\classes.dex
-base.3=C\:\\Users\\sheni\\Documents\\prototype\\LGU-Drive-Android\\app\\build\\intermediates\\global_synthetics_dex\\debug\\generateDebugGlobalSynthetics\\classes.dex
-base.4=C\:\\Users\\sheni\\Documents\\prototype\\LGU-Drive-Android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
+#Sun Jun 14 14:33:13 PST 2026
+base.0=C\:\\Users\\Elyssa\\StudioProjects\\LGU-DRIVE-Android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
+base.1=C\:\\Users\\Elyssa\\StudioProjects\\LGU-DRIVE-Android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
+base.2=C\:\\Users\\Elyssa\\StudioProjects\\LGU-DRIVE-Android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\14\\classes.dex
+base.3=C\:\\Users\\Elyssa\\StudioProjects\\LGU-DRIVE-Android\\app\\build\\intermediates\\global_synthetics_dex\\debug\\generateDebugGlobalSynthetics\\classes.dex
+base.4=C\:\\Users\\Elyssa\\StudioProjects\\LGU-DRIVE-Android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
 path.0=classes.dex
 path.1=0/classes.dex
 path.2=14/classes.dex
