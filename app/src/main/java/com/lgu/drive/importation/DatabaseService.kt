@@ -85,20 +85,37 @@ object DatabaseService {
 
     suspend fun fetchHistory(): List<List<String>> = withContext(Dispatchers.IO) {
         val records = mutableListOf<List<String>>()
-        val query = """
-            SELECT a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, 
-                   GROUP_CONCAT(dv.CarType SEPARATOR ' / ') as CombinedType,
-                   GROUP_CONCAT(dv.VehicleDescription SEPARATOR ' | ') as CombinedDesc,
-                   dn.DoneeID, dr.DonorID
-            FROM application a
-            JOIN donee dn ON a.DoneeID = dn.DoneeID
-            JOIN donor dr ON a.DonorID = dr.DonorID
-            LEFT JOIN donatedvehicle dv ON a.ApplicationID = dv.ApplicationID
-            GROUP BY a.ApplicationID
-            ORDER BY a.ApplicationID DESC
-        """
         try {
             val conn = getConnection()
+
+            // Dynamically discover the 5th column name to prevent silent schema mismatch crashes
+            var sigColName = "DonorSignaturePath"
+            try {
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT * FROM application LIMIT 1").use { rs ->
+                        val meta = rs.metaData
+                        if (meta.columnCount >= 5) {
+                            sigColName = meta.getColumnName(5)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val query = """
+                SELECT a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, 
+                       GROUP_CONCAT(dv.CarType SEPARATOR ' / ') as CombinedType,
+                       GROUP_CONCAT(dv.VehicleDescription SEPARATOR ' | ') as CombinedDesc,
+                       dn.DoneeID, dr.DonorID, a.`$sigColName`
+                FROM application a
+                JOIN donee dn ON a.DoneeID = dn.DoneeID
+                JOIN donor dr ON a.DonorID = dr.DonorID
+                LEFT JOIN donatedvehicle dv ON a.ApplicationID = dv.ApplicationID
+                GROUP BY a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, dn.DoneeID, dr.DonorID, a.`$sigColName`
+                ORDER BY a.ApplicationID DESC
+            """
+
             conn.createStatement().use { stmt ->
                 stmt.executeQuery(query).use { rs ->
                     while (rs.next()) {
@@ -115,12 +132,15 @@ object DatabaseService {
                             rs.getString(6) ?: "",
                             displayType,
                             rs.getString(7) ?: "",
-                            rs.getString(8) ?: ""
+                            rs.getString(8) ?: "",
+                            rs.getString(9) ?: ""
                         ))
                     }
                 }
             }
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         records
     }
 
@@ -202,11 +222,6 @@ object DatabaseService {
             }
         } catch (e: Exception) { e.printStackTrace() }
         Pair(motor, passenger)
-    }
-
-    suspend fun fetchApplicationDetails(appId: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
-        val (mv, pc) = fetchVehiclesDetailed()
-        (mv + pc).filter { it["ApplicationID"] == appId }
     }
 
     suspend fun submitVehicleApplication(

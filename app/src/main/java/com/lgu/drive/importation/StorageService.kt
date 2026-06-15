@@ -9,24 +9,18 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object StorageService {
-    /**
-     * Uploads a local file Uri to Firebase Storage bucket and returns its secure network download URL string.
-     */
     suspend fun uploadSignature(fileUri: Uri): String = suspendCancellableCoroutine { continuation ->
         try {
-            // MOVED INSIDE: This prevents the app from crashing on startup if Firebase isn't configured yet!
             val storageRef = Firebase.storage("gs://lgu-drive.firebasestorage.app").reference
-            val uniqueFileName = "signatures/uploaded_signature_${UUID.randomUUID()}.png"
+            // Matches your requested format: signatures/uploaded_signature_1464.png
+            val uniqueFileName = "signatures/uploaded_signature_${(1000..9999).random()}.png"
             val fileRef = storageRef.child(uniqueFileName)
 
             val uploadTask = fileRef.putFile(fileUri)
 
             uploadTask.addOnSuccessListener {
-                fileRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                    continuation.resume(downloadUri.toString())
-                }.addOnFailureListener { exception ->
-                    continuation.resumeWithException(exception)
-                }
+                // Immediately return the relative path instead of fetching the download URL
+                continuation.resume(uniqueFileName)
             }.addOnFailureListener { exception ->
                 if (continuation.isActive) {
                     continuation.resumeWithException(exception)
@@ -37,10 +31,11 @@ object StorageService {
                 uploadTask.cancel()
             }
         } catch (t: Throwable) {
-            // CRASH PREVENTION: Catches fatal configuration errors (like missing google-services.json)
             if (continuation.isActive) {
                 continuation.resumeWithException(Exception("Firebase is not connected to your app yet. Please connect it in Android Studio. Details: ${t.message}"))
             }
         }
     }
 }
+
+
