@@ -6,15 +6,26 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.Properties
 
+// ------------------------------------------------------------------------
+// 1. SQL ADMINISTRATION RESULT CLASS
+// ------------------------------------------------------------------------
+sealed class RawSqlResult {
+    data class SelectSuccess(val headers: List<String>, val rows: List<List<String>>) : RawSqlResult()
+    data class UpdateSuccess(val affectedRows: Int) : RawSqlResult()
+    data class Error(val message: String) : RawSqlResult()
+}
+
+// ------------------------------------------------------------------------
+// 2. DATABASE SERVICE
+// ------------------------------------------------------------------------
 object DatabaseService {
-    // REVERTED: Back to MariaDB since your app already has this installed!
     private const val URL = "jdbc:mariadb://zephyr.proxy.rlwy.net:37168/importationform"
     private const val USER = "root"
     private const val PASS = "aZLUGLIFlwAzyDqsEsEGIavWAqsnJaxc"
 
     init {
         try {
-            Class.forName("org.mariadb.jdbc.Driver") // REVERTED
+            Class.forName("org.mariadb.jdbc.Driver")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -74,20 +85,37 @@ object DatabaseService {
 
     suspend fun fetchHistory(): List<List<String>> = withContext(Dispatchers.IO) {
         val records = mutableListOf<List<String>>()
-        val query = """
-            SELECT a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, 
-                   GROUP_CONCAT(dv.CarType SEPARATOR ' / ') as CombinedType,
-                   GROUP_CONCAT(dv.VehicleDescription SEPARATOR ' | ') as CombinedDesc,
-                   dn.DoneeID, dr.DonorID
-            FROM application a
-            JOIN donee dn ON a.DoneeID = dn.DoneeID
-            JOIN donor dr ON a.DonorID = dr.DonorID
-            LEFT JOIN donatedvehicle dv ON a.ApplicationID = dv.ApplicationID
-            GROUP BY a.ApplicationID
-            ORDER BY a.ApplicationID DESC
-        """
         try {
             val conn = getConnection()
+
+            // Dynamically discover the 5th column name to prevent silent schema mismatch crashes
+            var sigColName = "DonorSignaturePath"
+            try {
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT * FROM application LIMIT 1").use { rs ->
+                        val meta = rs.metaData
+                        if (meta.columnCount >= 5) {
+                            sigColName = meta.getColumnName(5)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val query = """
+                SELECT a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, 
+                       GROUP_CONCAT(dv.CarType SEPARATOR ' / ') as CombinedType,
+                       GROUP_CONCAT(dv.VehicleDescription SEPARATOR ' | ') as CombinedDesc,
+                       dn.DoneeID, dr.DonorID, a.`$sigColName`
+                FROM application a
+                JOIN donee dn ON a.DoneeID = dn.DoneeID
+                JOIN donor dr ON a.DonorID = dr.DonorID
+                LEFT JOIN donatedvehicle dv ON a.ApplicationID = dv.ApplicationID
+                GROUP BY a.ApplicationID, a.ApplicationDate, dn.DoneeName, dr.DonorName, dn.DoneeID, dr.DonorID, a.`$sigColName`
+                ORDER BY a.ApplicationID DESC
+            """
+
             conn.createStatement().use { stmt ->
                 stmt.executeQuery(query).use { rs ->
                     while (rs.next()) {
@@ -104,23 +132,24 @@ object DatabaseService {
                             rs.getString(6) ?: "",
                             displayType,
                             rs.getString(7) ?: "",
-                            rs.getString(8) ?: ""
+                            rs.getString(8) ?: "",
+                            rs.getString(9) ?: ""
                         ))
                     }
                 }
             }
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         records
     }
 
-    // Clean, exact explicit mapping using lowercase normalizers
     suspend fun fetchVehiclesDetailed(): Pair<List<Map<String, String>>, List<Map<String, String>>> = withContext(Dispatchers.IO) {
         val motor = mutableListOf<Map<String, String>>()
         val passenger = mutableListOf<Map<String, String>>()
         try {
             val conn = getConnection()
 
-            // 1. Fetch Passenger Cars Dynamically
             val passCarRows = mutableListOf<Map<String, String>>()
             conn.createStatement().use { stmt ->
                 stmt.executeQuery("SELECT * FROM passengercar").use { rs ->
@@ -138,7 +167,6 @@ object DatabaseService {
                 }
             }
 
-            // 2. Fetch Donated Vehicles Dynamically
             conn.createStatement().use { stmt ->
                 stmt.executeQuery("SELECT * FROM donatedvehicle").use { rs ->
                     val meta = rs.metaData
@@ -151,11 +179,9 @@ object DatabaseService {
                             row[cleanLabel] = rs.getString(i) ?: ""
                         }
 
-                        // Exact mappings based on expected MySQL lowercase returns
                         val donateId = row["donateid"] ?: ""
                         val appId = row["applicationid"] ?: ""
                         val desc = row["vehicledescription"] ?: "N/A"
-                        // Explicitly targeting vehicletariff
                         val tariff = row["vehicletariff"] ?: row["tariffcode"] ?: "N/A"
                         val origin = row["origin"] ?: "N/A"
                         val qty = row["quantity"] ?: "1"
@@ -196,11 +222,6 @@ object DatabaseService {
             }
         } catch (e: Exception) { e.printStackTrace() }
         Pair(motor, passenger)
-    }
-
-    suspend fun fetchApplicationDetails(appId: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
-        val (mv, pc) = fetchVehiclesDetailed()
-        (mv + pc).filter { it["ApplicationID"] == appId }
     }
 
     suspend fun submitVehicleApplication(
@@ -409,10 +430,4 @@ object DatabaseService {
             }
         } catch (e: Exception) { RawSqlResult.Error(e.message ?: "SQL Execution Error Exception.") }
     }
-}
-
-sealed class RawSqlResult {
-    data class SelectSuccess(val headers: List<String>, val rows: List<List<String>>) : RawSqlResult()
-    data class UpdateSuccess(val affectedRows: Int) : RawSqlResult()
-    data class Error(val message: String) : RawSqlResult()
 }

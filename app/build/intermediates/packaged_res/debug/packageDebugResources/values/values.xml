@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LGU-DRIVE Console</string>
+    <string name="gcm_defaultSenderId" translatable="false">1016927917548</string>
+    <string name="google_api_key" translatable="false">AIzaSyCBqX4Q9lqVvh2M8fgvd3-TdWtn2JbHpMQ</string>
+    <string name="google_app_id" translatable="false">1:1016927917548:android:6b35194ee06ac974b01cc9</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCBqX4Q9lqVvh2M8fgvd3-TdWtn2JbHpMQ</string>
+    <string name="google_storage_bucket" translatable="false">lgu-drive.firebasestorage.app</string>
+    <string name="project_id" translatable="false">lgu-drive</string>
 </resources>

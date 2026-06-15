@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.lgu.drive.importation.app-mergeDebugResources-45:/values-v21/values-v21.xml",
+            "outputFile": "com.lgu.drive.importation.app-mergeDebugResources-57:/values-v21/values-v21.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Elyssa\\.gradle\\caches\\9.4.1\\transforms\\023608bf63fb28e4b04f818914508a63\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
+                    "source": "C:\\Users\\Elyssa\\.gradle\\caches\\9.4.1\\transforms\\ce44c51b6d7d9c4da6d7672206888f9f\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4",

@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -61,4 +62,12 @@ dependencies {
 
     // JDBC Driver for MariaDB
     implementation("org.mariadb.jdbc:mariadb-java-client:3.4.1")
+
+    // Import the BoM for the Firebase platform
+    implementation(platform("com.google.firebase:firebase-bom:34.14.1"))
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Add the dependency for the Cloud Storage library
+    implementation("com.google.firebase:firebase-storage")
 }
+
