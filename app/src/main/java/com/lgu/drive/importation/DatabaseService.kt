@@ -237,10 +237,12 @@ object DatabaseService {
             val doneeId = if (doneeStatus == "existing") formData["ExistingDoneeID"] as String else {
                 var maxNum = 0
                 conn.createStatement().use { stmt ->
+                    // Get highest number after the 'DON' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DoneeID, 4) AS UNSIGNED)) FROM donee").use { rs ->
                         if (rs.next()) maxNum = rs.getInt(1)
                     }
                 }
+                // Pad to 4 digits: DON0010
                 val id = String.format("DON%04d", maxNum + 1)
 
                 conn.prepareStatement("INSERT INTO donee VALUES (?,?,?,?,?,?,?)").use { ps ->
@@ -256,10 +258,12 @@ object DatabaseService {
             val donorId = if (donorStatus == "existing") formData["ExistingDonorID"] as String else {
                 var maxNum = 0
                 conn.createStatement().use { stmt ->
+                    // Get highest number after the 'DOR' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonorID, 4) AS UNSIGNED)) FROM donor").use { rs ->
                         if (rs.next()) maxNum = rs.getInt(1)
                     }
                 }
+                // Pad to 4 digits: DOR0010
                 val id = String.format("DOR%04d", maxNum + 1)
 
                 conn.prepareStatement("INSERT INTO donor (DonorID, DonorName, DonorAddress, DonorTelNo, DonorFaxNo, DonorEmail) VALUES (?,?,?,?,?,?)").use { ps ->
@@ -273,10 +277,12 @@ object DatabaseService {
 
             var maxAppNum = 0
             conn.createStatement().use { stmt ->
+                // Get highest number after the 'APP-' prefix (length 4)
                 stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(ApplicationID, 5) AS UNSIGNED)) FROM application").use { rs ->
                     if (rs.next()) maxAppNum = rs.getInt(1)
                 }
             }
+            // Pad to 4 digits: APP-0010
             val appId = String.format("APP-%04d", maxAppNum + 1)
 
             conn.prepareStatement("INSERT INTO application VALUES (?,?,?,?,?)").use { appPs ->
@@ -292,10 +298,12 @@ object DatabaseService {
 
                 var maxAssetNum = 0
                 conn.createStatement().use { stmt ->
+                    // Get highest number after the 'CAR' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
                         if (rs.next()) maxAssetNum = rs.getInt(1)
                     }
                 }
+                // Pad to 4 digits: CAR0010
                 val donateId = String.format("CAR%05d", maxAssetNum + 1)
 
                 conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { ps ->
@@ -310,10 +318,12 @@ object DatabaseService {
             for (pc in passengerCars) {
                 var maxAssetNum = 0
                 conn.createStatement().use { stmt ->
+                    // Get highest number after the 'CAR' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
                         if (rs.next()) maxAssetNum = rs.getInt(1)
                     }
                 }
+                // Pad to 4 digits: CAR0010
                 val donateId = String.format("CAR%05d", maxAssetNum + 1)
 
                 conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { psV ->
