@@ -88,7 +88,6 @@ object DatabaseService {
         try {
             val conn = getConnection()
 
-            // Dynamically discover the 5th column name to prevent silent schema mismatch crashes
             var sigColName = "DonorSignaturePath"
             try {
                 conn.createStatement().use { stmt ->
@@ -466,9 +465,9 @@ object DatabaseService {
                     psC.setInt(3, pc["year"]?.toIntOrNull() ?: 0)
                     psC.setString(4, pc["color"]?.ifBlank { "N/A" } ?: "N/A")
                     try { psC.setDate(5, java.sql.Date.valueOf(pc["regDate"] ?: "")) } catch (e: Exception) { psC.setNull(5, java.sql.Types.DATE) }
-                    psC.setString(6, pc["weight"]?.ifBlank { "0" } ?: "0")
+                    psC.setString(6, pc["weight"]?.replace(Regex("[^0-9]"), "")?.ifBlank { "0" } ?: "0")
                     psC.setString(7, pc["engineNo"]?.ifBlank { "N/A" } ?: "N/A")
-                    psC.setString(8, pc["displacement"]?.ifBlank { "N/A" } ?: "N/A")
+                    psC.setString(8, pc["displacement"]?.replace(Regex("[^0-9]"), "")?.ifBlank { "0" } ?: "0")
                     psC.setString(9, pc["fuelType"]?.ifBlank { "G" } ?: "G"); psC.executeUpdate()
                 }
             }
@@ -542,6 +541,32 @@ object DatabaseService {
             Result.success(Unit)
         } catch (e: Exception) {
             sharedConn?.rollback()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteDonor(donorId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val conn = getConnection()
+            conn.prepareStatement("DELETE FROM donor WHERE DonorID = ?").use { ps ->
+                ps.setString(1, donorId)
+                val affected = ps.executeUpdate()
+                if (affected > 0) Result.success(Unit) else Result.failure(Exception("Donor not found or could not be deleted."))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteDonee(doneeId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val conn = getConnection()
+            conn.prepareStatement("DELETE FROM donee WHERE DoneeID = ?").use { ps ->
+                ps.setString(1, doneeId)
+                val affected = ps.executeUpdate()
+                if (affected > 0) Result.success(Unit) else Result.failure(Exception("Donee not found or could not be deleted."))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

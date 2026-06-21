@@ -32,18 +32,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -53,6 +52,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 // Utility to space out database keys
 fun formatDatabaseKey(key: String): String {
@@ -86,7 +89,7 @@ fun ModernAppLayoutContainer() {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route?.substringBefore("/")
+    val currentRoute = navBackStackEntry?.destination?.route
     var refreshTrigger by remember { mutableLongStateOf(0L) }
 
     ModalNavigationDrawer(
@@ -126,7 +129,7 @@ fun ModernAppLayoutContainer() {
                     NavigationDrawerItem(
                         icon = { Icon(tab.icon, contentDescription = null) },
                         label = { Text(tab.label, fontWeight = FontWeight.Medium) },
-                        selected = currentRoute == tab.route.substringBefore("/"),
+                        selected = currentRoute == tab.route,
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(tab.route) {
@@ -147,7 +150,7 @@ fun ModernAppLayoutContainer() {
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "v3.2.0-PROTOTYPE",
+                    "v3.9.0-PROTOTYPE",
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.LightGray
@@ -186,12 +189,8 @@ fun ModernAppLayoutContainer() {
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).background(Color(0xFFF8F9FA))) {
                 NavHost(navController = navController, startDestination = "form") {
-                    composable("form") { VehicleApplicationForm(navController, null, refreshTrigger) }
-                    composable("edit/{appId}") { backStackEntry ->
-                        val appId = backStackEntry.arguments?.getString("appId")
-                        VehicleApplicationForm(navController, appId, refreshTrigger)
-                    }
-                    composable("history") { HistoryLogScreen(navController, refreshTrigger) }
+                    composable("form") { RegisterVehicleScreen(navController, refreshTrigger) }
+                    composable("history") { HistoryLogScreen(navController, refreshTrigger) { refreshTrigger = System.currentTimeMillis() } }
                 }
             }
         }
@@ -200,11 +199,10 @@ fun ModernAppLayoutContainer() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VehicleApplicationForm(navController: NavHostController, appId: String?, refreshTrigger: Long) {
+fun RegisterVehicleScreen(navController: NavHostController, refreshTrigger: Long) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var currentStep by remember { mutableIntStateOf(0) }
-    var isDataLoaded by remember { mutableStateOf(appId == null) }
 
     var donors by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
     var donees by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
@@ -229,9 +227,9 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
     var isMotorVehicleSelected by remember { mutableStateOf(false) }
     var isPassengerCarSelected by remember { mutableStateOf(false) }
 
-    val motorVehicles = remember { mutableStateListOf(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1")) }
+    val motorVehicles = remember { mutableStateListOf(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1")) }
     val passengerCars = remember { mutableStateListOf(mutableMapOf(
-        "DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"
+        "desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"
     )) }
 
     var signatureUriText by remember { mutableStateOf("No confirmation files selected") }
@@ -247,84 +245,9 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
         }
     }
 
-    LaunchedEffect(refreshTrigger, appId) {
+    LaunchedEffect(refreshTrigger) {
         val (dnr, dne) = DatabaseService.fetchDonorsAndDoneesDetailed()
         donors = dnr; donees = dne
-
-        if (appId != null && !isDataLoaded) {
-            val logs = DatabaseService.fetchHistory()
-            val targetLog = logs.find { it[0] == appId }
-
-            if (targetLog != null) {
-                // Populate Donee
-                val dId = targetLog[7]
-                val existingDonee = donees.find { it["DoneeID"] == dId }
-                if (existingDonee != null) {
-                    doneeStatus = "existing"
-                    selectedDoneeId = dId
-                    doneeName = existingDonee["DoneeName"] ?: ""
-                    doneeAddr = existingDonee["DoneeAddress"] ?: ""
-                    doneeContact = existingDonee["ContactPerson"] ?: ""
-                    doneeTel = existingDonee["DoneeTelNo"] ?: ""
-                    doneeFax = existingDonee["DoneeFaxNo"] ?: ""
-                    doneeEmail = existingDonee["DoneeEmail"] ?: ""
-                }
-
-                // Populate Donor
-                val donorId = targetLog[8]
-                val existingDonor = donors.find { it["DonorID"] == donorId }
-                if (existingDonor != null) {
-                    donorStatus = "existing"
-                    selectedDonorId = donorId
-                    donorName = existingDonor["DonorName"] ?: ""
-                    donorAddr = existingDonor["DonorAddress"] ?: ""
-                    donorTel = existingDonor["DonorTelNo"] ?: ""
-                    donorFax = existingDonor["DonorFaxNo"] ?: ""
-                    donorEmail = existingDonor["DonorEmail"] ?: ""
-                }
-
-                // Populate Vehicles
-                val (mvs, pcs) = DatabaseService.fetchVehiclesDetailed()
-
-                val appMVs = mvs.filter { it["ApplicationID"] == appId }
-                if (appMVs.isNotEmpty()) {
-                    isMotorVehicleSelected = true
-                    motorVehicles.clear()
-                    appMVs.forEach { mv ->
-                        motorVehicles.add(mutableMapOf(
-                            "DonateID" to (mv["DonateID"] ?: ""),
-                            "desc" to (mv["VehicleDescription"] ?: ""),
-                            "tariffCode" to (mv["TariffCode"] ?: ""),
-                            "origin" to (mv["Origin"] ?: ""),
-                            "qty" to (mv["Quantity"] ?: "")
-                        ))
-                    }
-                }
-
-                val appPCs = pcs.filter { it["ApplicationID"] == appId }
-                if (appPCs.isNotEmpty()) {
-                    isPassengerCarSelected = true
-                    passengerCars.clear()
-                    appPCs.forEach { pc ->
-                        passengerCars.add(mutableMapOf(
-                            "DonateID" to (pc["DonateID"] ?: ""),
-                            "desc" to (pc["VehicleDescription"] ?: ""),
-                            "tariffCode" to (pc["TariffCode"] ?: ""),
-                            "origin" to (pc["Origin"] ?: ""),
-                            "vin" to (pc["VIN"] ?: ""),
-                            "year" to (pc["YearModel"] ?: ""),
-                            "color" to (pc["Color"] ?: ""),
-                            "regDate" to (pc["RegistrationDate"] ?: ""),
-                            "weight" to (pc["VehicleWeight"] ?: ""),
-                            "engineNo" to (pc["EngineNumber"] ?: ""),
-                            "displacement" to (pc["EngineDisplacement"] ?: ""),
-                            "fuelType" to (pc["FuelType"] ?: "G")
-                        ))
-                    }
-                }
-            }
-            isDataLoaded = true
-        }
     }
 
     fun clearFieldsForCurrentSection() {
@@ -340,9 +263,9 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
             2 -> {
                 isMotorVehicleSelected = false; isPassengerCarSelected = false
                 motorVehicles.clear()
-                motorVehicles.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1"))
+                motorVehicles.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1"))
                 passengerCars.clear()
-                passengerCars.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
+                passengerCars.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
             }
             3 -> {
                 signatureUriText = "No confirmation files selected"
@@ -355,31 +278,14 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
         doneeName = ""; doneeAddr = ""; doneeContact = ""; doneeTel = ""; doneeFax = ""; doneeEmail = ""; selectedDoneeId = ""; doneeStatus = "new"
         donorName = ""; donorAddr = ""; donorTel = ""; donorFax = ""; donorEmail = ""; selectedDonorId = ""; donorStatus = "new"
         isMotorVehicleSelected = false; isPassengerCarSelected = false
-        motorVehicles.clear(); motorVehicles.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1"))
-        passengerCars.clear(); passengerCars.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
+        motorVehicles.clear(); motorVehicles.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1"))
+        passengerCars.clear(); passengerCars.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
         signatureUriText = "No confirmation files selected"
         actualFileUri = null
         currentStep = 0
     }
 
-    if (!isDataLoaded) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-        return
-    }
-
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (appId != null) {
-            Text(
-                "Editing Application: $appId",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
-
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -543,7 +449,7 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                                         motorVehicles.removeAt(idx)
                                                         if (motorVehicles.isEmpty()) {
                                                             isMotorVehicleSelected = false
-                                                            motorVehicles.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1"))
+                                                            motorVehicles.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1"))
                                                         }
                                                     }, modifier = Modifier.size(24.dp)) {
                                                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red, modifier = Modifier.size(20.dp))
@@ -592,7 +498,7 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                     }
 
                                     if (totalVehicles < 4) {
-                                        OutlinedButton(onClick = { motorVehicles.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1")) }, modifier = Modifier.align(Alignment.End), shape = RoundedCornerShape(8.dp)) { Text("+ Add Motor Vehicle") }
+                                        OutlinedButton(onClick = { motorVehicles.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1")) }, modifier = Modifier.align(Alignment.End), shape = RoundedCornerShape(8.dp)) { Text("+ Add Motor Vehicle") }
                                     } else {
                                         Text(text = "Combined maximum of 4 vehicles reached.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.align(Alignment.End).padding(top = 8.dp))
                                     }
@@ -610,7 +516,7 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                                         passengerCars.removeAt(idx)
                                                         if (passengerCars.isEmpty()) {
                                                             isPassengerCarSelected = false
-                                                            passengerCars.add(mutableMapOf("DonateID" to "", "desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
+                                                            passengerCars.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G"))
                                                         }
                                                     }, modifier = Modifier.size(24.dp)) {
                                                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red, modifier = Modifier.size(20.dp))
@@ -659,10 +565,10 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                     OutlinedTextField(value = item["color"] ?: "", onValueChange = { passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("color", it) } }, label = { Text("Color *") }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(8.dp))
                                                     OutlinedTextField(
-                                                        value = item["weight"]?.replace(Regex("(?i)\\s*kg$"), "") ?: "",
-                                                        onValueChange = {
-                                                            val cleanWeight = it.replace(Regex("(?i)\\s*kg$"), "")
-                                                            passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("weight", if (cleanWeight.isNotBlank()) "$cleanWeight kg" else "") }
+                                                        value = item["weight"]?.filter { it.isDigit() } ?: "",
+                                                        onValueChange = { newVal ->
+                                                            val digitsOnly = newVal.filter { it.isDigit() }
+                                                            passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("weight", if (digitsOnly.isNotBlank()) "$digitsOnly kg" else "") }
                                                         },
                                                         label = { Text("Weight *") },
                                                         suffix = { Text("kg", color = Color.Gray) },
@@ -673,15 +579,67 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                                     )
                                                 }
 
-                                                OutlinedTextField(value = item["regDate"] ?: "", onValueChange = { passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("regDate", it) } }, label = { Text("Registration Date (YYYY-MM-DD) *") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(8.dp))
+                                                // --- DATE PICKER FOR REGISTRATION DATE ---
+                                                var showDatePicker by remember { mutableStateOf(false) }
+
+                                                if (showDatePicker) {
+                                                    val initialMillis = remember {
+                                                        try {
+                                                            val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                                            format.timeZone = TimeZone.getTimeZone("UTC")
+                                                            item["regDate"]?.takeIf { it.isNotBlank() }?.let { format.parse(it)?.time }
+                                                        } catch (e: Exception) { null }
+                                                    }
+                                                    val datePickerState = rememberDatePickerState(
+                                                        initialSelectedDateMillis = initialMillis,
+                                                        selectableDates = object : SelectableDates {
+                                                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                                                return utcTimeMillis <= System.currentTimeMillis()
+                                                            }
+                                                        }
+                                                    )
+
+                                                    DatePickerDialog(
+                                                        onDismissRequest = { showDatePicker = false },
+                                                        confirmButton = {
+                                                            TextButton(onClick = {
+                                                                datePickerState.selectedDateMillis?.let { millis ->
+                                                                    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                                                    formatter.timeZone = TimeZone.getTimeZone("UTC")
+                                                                    val formattedDate = formatter.format(Date(millis))
+                                                                    passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("regDate", formattedDate) }
+                                                                }
+                                                                showDatePicker = false
+                                                            }) { Text("OK") }
+                                                        },
+                                                        dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("CANCEL") } }
+                                                    ) {
+                                                        DatePicker(state = datePickerState)
+                                                    }
+                                                }
+
+                                                Box(modifier = Modifier.fillMaxWidth()) {
+                                                    OutlinedTextField(
+                                                        value = item["regDate"] ?: "",
+                                                        onValueChange = {},
+                                                        readOnly = true,
+                                                        label = { Text("Registration Date *") },
+                                                        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Select Date") },
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        singleLine = true,
+                                                        shape = RoundedCornerShape(8.dp)
+                                                    )
+                                                    Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true })
+                                                }
+                                                // -----------------------------------------
 
                                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                     OutlinedTextField(value = item["engineNo"] ?: "", onValueChange = { passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("engineNo", it) } }, label = { Text("Engine Number *") }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(8.dp))
                                                     OutlinedTextField(
-                                                        value = item["displacement"]?.replace(Regex("(?i)\\s*cc$"), "") ?: "",
-                                                        onValueChange = {
-                                                            val cleanDisp = it.replace(Regex("(?i)\\s*cc$"), "")
-                                                            passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("displacement", if (cleanDisp.isNotBlank()) "$cleanDisp cc" else "") }
+                                                        value = item["displacement"]?.filter { it.isDigit() } ?: "",
+                                                        onValueChange = { newVal ->
+                                                            val digitsOnly = newVal.filter { it.isDigit() }
+                                                            passengerCars[idx] = passengerCars[idx].toMutableMap().apply { put("displacement", if (digitsOnly.isNotBlank()) "$digitsOnly cc" else "") }
                                                         },
                                                         label = { Text("Displacement *") },
                                                         suffix = { Text("cc", color = Color.Gray) },
@@ -849,10 +807,6 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                     Toast.makeText(context, "Passenger Car #${idx + 1} must have a valid 4-digit Year Model.", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
-                                if (!pc["regDate"]!!.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
-                                    Toast.makeText(context, "Passenger Car #${idx + 1} Registration Date must be in YYYY-MM-DD format.", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
                             }
                         }
 
@@ -874,31 +828,19 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                                 }
 
                                 val payload = mapOf(
-                                    "ApplicationID" to (appId ?: ""), // Sent to backend if updating
                                     "DoneeStatus" to doneeStatus, "ExistingDoneeID" to selectedDoneeId, "DoneeName" to doneeName, "DoneeAddress" to doneeAddr, "ContactPerson" to doneeContact, "DoneeTelNo" to doneeTel, "DoneeFaxNo" to doneeFax, "DoneeEmail" to doneeEmail,
                                     "DonorStatus" to donorStatus, "ExistingDonorID" to selectedDonorId, "DonorName" to donorName, "DonorAddress" to donorAddr, "DonorTelNo" to donorTel, "DonorFaxNo" to donorFax, "DonorEmail" to donorEmail,
                                     "IncludesMotorVehicles" to isMotorVehicleSelected.toString(), "IncludesPassengerCars" to isPassengerCarSelected.toString(),
                                     "DonorSignaturePath" to localSavedPath
                                 )
 
-                                if (appId == null) {
-                                    DatabaseService.submitVehicleApplication(payload, if(isMotorVehicleSelected) motorVehicles else emptyList(), if(isPassengerCarSelected) passengerCars else emptyList())
-                                        .onSuccess { id ->
-                                            Toast.makeText(context, "Submitted successfully!", Toast.LENGTH_LONG).show()
-                                            globalResetAllFields()
-                                            navController.navigate("history") { popUpTo("form") { inclusive = true } }
-                                        }
-                                        .onFailure { tx -> Toast.makeText(context, "Database Error: ${tx.message}", Toast.LENGTH_LONG).show() }
-                                } else {
-                                    // Requires updateVehicleApplication configured in DatabaseService to handle edits using the provided ApplicationID
-                                    DatabaseService.updateVehicleApplication(appId, payload, if(isMotorVehicleSelected) motorVehicles else emptyList(), if(isPassengerCarSelected) passengerCars else emptyList())
-                                        .onSuccess {
-                                            Toast.makeText(context, "Application updated successfully!", Toast.LENGTH_LONG).show()
-                                            globalResetAllFields()
-                                            navController.navigate("history") { popUpTo("form") { inclusive = true } }
-                                        }
-                                        .onFailure { tx -> Toast.makeText(context, "Update Error: ${tx.message}", Toast.LENGTH_LONG).show() }
-                                }
+                                DatabaseService.submitVehicleApplication(payload, if(isMotorVehicleSelected) motorVehicles else emptyList(), if(isPassengerCarSelected) passengerCars else emptyList())
+                                    .onSuccess { id ->
+                                        Toast.makeText(context, "Submitted successfully!", Toast.LENGTH_LONG).show()
+                                        globalResetAllFields()
+                                        navController.navigate("history") { popUpTo("form") { inclusive = true } }
+                                    }
+                                    .onFailure { tx -> Toast.makeText(context, "Database Error: ${tx.message}", Toast.LENGTH_LONG).show() }
                             } catch (e: Exception) {
                                 Toast.makeText(context, "Storage Save Failure: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                             }
@@ -906,14 +848,14 @@ fun VehicleApplicationForm(navController: NavHostController, appId: String?, ref
                     }
                 },
                 modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) { Text(if (currentStep < 3) "CONTINUE" else if (appId != null) "UPDATE" else "SUBMIT", fontWeight = FontWeight.Bold) }
+            ) { Text(if (currentStep < 3) "CONTINUE" else "SUBMIT", fontWeight = FontWeight.Bold) }
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
+fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long, onRefreshRequested: () -> Unit) {
     var logs by remember { mutableStateOf<List<List<String>>>(emptyList()) }
     var donorsDetailed by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
     var doneesDetailed by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
@@ -928,6 +870,12 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
     var selectedLogForDetail by remember { mutableStateOf<List<String>?>(null) }
     var selectedEntityForDetail by remember { mutableStateOf<Map<String, String>?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<String?>(null) }
+
+    var entityDeleteError by remember { mutableStateOf<String?>(null) }
+    var entityToDelete by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    // State for the inline edit dialog
+    var isEditingLog by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -949,95 +897,99 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
     fun <T> sortData(list: List<T>, keyExtractor: (T) -> String): List<T> =
         if (sortOrder == "Ascending") list.sortedBy { keyExtractor(it) } else list.sortedByDescending { keyExtractor(it) }
 
-    val hierarchicalResults = remember(searchQuery, logs, donorsDetailed, doneesDetailed, motorVehicles, passengerCars, viewCategory, sortOrder) {
-        if (searchQuery.isBlank()) return@remember emptyList<Any>()
-        val matchedDonors = donorsDetailed.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
-        val matchedDonees = doneesDetailed.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
-        val matchedMotors = motorVehicles.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
-        val matchedPassengers = passengerCars.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
-        val matchedDonorIds = matchedDonors.map { it["DonorID"] }
-        val matchedDoneeIds = matchedDonees.map { it["DoneeID"] }
-        val matchedAppIdsFromVehicles = (matchedMotors + matchedPassengers).map { it["ApplicationID"] }.distinct()
-
-        val tiedApps = logs.filter { app -> app[0].contains(searchQuery, ignoreCase = true) || matchedDonorIds.contains(app[8]) || matchedDoneeIds.contains(app[7]) || matchedAppIdsFromVehicles.contains(app[0]) }
-
-        val results = mutableListOf<Any>()
-        results.addAll(sortData(tiedApps) { it[0] })
-
-        when (viewCategory) {
-            "Donor" -> results.addAll(sortData(matchedDonors) { it["DonorName"] ?: "" })
-            "Donee" -> results.addAll(sortData(matchedDonees) { it["DoneeName"] ?: "" })
-            "Motor Vehicle" -> results.addAll(sortData(matchedMotors) { it["DonateID"] ?: "" })
-            "Passenger Car" -> results.addAll(sortData(matchedPassengers) { it["DonateID"] ?: "" })
-            else -> {
-                results.addAll(sortData(matchedDonors) { it["DonorName"] ?: "" })
-                results.addAll(sortData(matchedDonees) { it["DoneeName"] ?: "" })
-                results.addAll(sortData(matchedMotors) { it["DonateID"] ?: "" })
-                results.addAll(sortData(matchedPassengers) { it["DonateID"] ?: "" })
-            }
-        }
-        results
-    }
+    val isSearching = searchQuery.isNotBlank()
 
     if (selectedLogForDetail != null) {
         val log = selectedLogForDetail!!
 
-        val fastAppVehicleDetails = remember(log[0], motorVehicles, passengerCars) {
-            val mvs = motorVehicles.filter { it["ApplicationID"] == log[0] }
-            val pcs = passengerCars.filter { it["ApplicationID"] == log[0] }
-            mvs + pcs
-        }
+        if (isEditingLog) {
+            EditApplicationDialog(
+                appId = log[0],
+                initialLog = log,
+                donorsDetailed = donorsDetailed,
+                doneesDetailed = doneesDetailed,
+                motorVehicles = motorVehicles,
+                passengerCars = passengerCars,
+                onDismiss = { isEditingLog = false },
+                onSave = {
+                    isEditingLog = false
+                    selectedLogForDetail = null
+                    onRefreshRequested()
+                }
+            )
+        } else {
+            val fastAppVehicleDetails = remember(log[0], motorVehicles, passengerCars) {
+                val mvs = motorVehicles.filter { it["ApplicationID"] == log[0] }
+                val pcs = passengerCars.filter { it["ApplicationID"] == log[0] }
+                mvs + pcs
+            }
 
-        AlertDialog(
-            onDismissRequest = { selectedLogForDetail = null },
-            confirmButton = { TextButton(onClick = { selectedLogForDetail = null }) { Text("CLOSE") } },
-            dismissButton = { TextButton(onClick = { showDeleteConfirmation = log[0] }, colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)) { Text("DELETE APPLICATION") } },
-            title = { Text("Application Details", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        DetailRow("Application ID", log[0])
-                        DetailRow("Date Submitted", log[1])
-                        DetailRow("Donor Name", log[3])
-                        DetailRow("Donee Name", log[2])
+            AlertDialog(
+                onDismissRequest = { selectedLogForDetail = null },
+                confirmButton = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = { showDeleteConfirmation = log[0] },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                        ) { Text("DELETE") }
 
-                        val signaturePath = log.getOrElse(9) { "" }
-                        if (signaturePath.isNotBlank() && signaturePath != "NULL") {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Signature File", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray, modifier = Modifier.weight(1f))
-                                Text(
-                                    text = "Saved Locally",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    textDecoration = TextDecoration.Underline,
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clickable {
-                                            Toast.makeText(context, "Stored at: $signaturePath", Toast.LENGTH_LONG).show()
-                                        }
-                                )
-                            }
-                        } else {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Signature File", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray, modifier = Modifier.weight(1f))
-                                Text("Not Provided", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color.Gray, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
-                            }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { isEditingLog = true }) { Text("EDIT", fontWeight = FontWeight.Bold) }
+                            TextButton(onClick = { selectedLogForDetail = null }) { Text("CLOSE") }
                         }
                     }
-                    HorizontalDivider()
-                    Text("Donated Vehicles", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                    if (fastAppVehicleDetails.isEmpty()) {
-                        Text("No vehicles found attached to this application.", fontSize = 12.sp, color = Color.Gray)
-                    } else {
-                        fastAppVehicleDetails.forEachIndexed { index, vehicle ->
-                            Card(shape = RoundedCornerShape(4.dp), border = BorderStroke(0.5.dp, Color.LightGray), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
-                                Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text("Vehicle #${index + 1}: ${vehicle["CarType"]}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
-                                    vehicle.filterKeys { it != "CarType" && it != "ApplicationID" }.forEach { (k, v) ->
-                                        if (v.isNotBlank() && v != "NULL" && v != "N/A") {
-                                            DetailRow(formatDatabaseKey(k), v)
+                },
+                title = { Text("Application Details", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            DetailRow("Application ID", log[0])
+                            DetailRow("Date Submitted", log[1])
+                            DetailRow("Donor Name", log[3])
+                            DetailRow("Donee Name", log[2])
+
+                            val signaturePath = log.getOrElse(9) { "" }
+                            if (signaturePath.isNotBlank() && signaturePath != "NULL") {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Signature File", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                                    Text(
+                                        text = "Saved Locally",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textDecoration = TextDecoration.Underline,
+                                        textAlign = TextAlign.End,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable {
+                                                Toast.makeText(context, "Stored at: $signaturePath", Toast.LENGTH_LONG).show()
+                                            }
+                                    )
+                                }
+                            } else {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Signature File", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                                    Text("Not Provided", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color.Gray, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                                }
+                            }
+                        }
+                        HorizontalDivider()
+                        Text("Donated Vehicles", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                        if (fastAppVehicleDetails.isEmpty()) {
+                            Text("No vehicles found attached to this application.", fontSize = 12.sp, color = Color.Gray)
+                        } else {
+                            fastAppVehicleDetails.forEachIndexed { index, vehicle ->
+                                Card(shape = RoundedCornerShape(4.dp), border = BorderStroke(0.5.dp, Color.LightGray), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+                                    Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text("Vehicle #${index + 1}: ${vehicle["CarType"]}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                                        vehicle.filterKeys { it != "CarType" && it != "ApplicationID" }.forEach { (k, v) ->
+                                            if (v.isNotBlank() && v != "NULL" && v != "N/A") {
+                                                DetailRow(formatDatabaseKey(k), v)
+                                            }
                                         }
                                     }
                                 }
@@ -1045,28 +997,52 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
                         }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
     if (selectedEntityForDetail != null) {
         val entity = selectedEntityForDetail!!
+        val isDonor = entity.containsKey("DonorID")
+        val isDonee = entity.containsKey("DoneeID")
+        val isVehicle = entity.containsKey("DonateID")
+
+        val id = if (isDonor) entity["DonorID"] else if (isDonee) entity["DoneeID"] else null
+        val matchingApps = if (id != null) logs.filter { if (isDonor) it[8] == id else it[7] == id } else emptyList()
+
         AlertDialog(
             onDismissRequest = { selectedEntityForDetail = null },
-            confirmButton = { TextButton(onClick = { selectedEntityForDetail = null }) { Text("CLOSE") } },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isDonor || isDonee) {
+                        val typeStr = if (isDonor) "donor" else "donee"
+                        TextButton(
+                            onClick = {
+                                if (matchingApps.isNotEmpty()) {
+                                    entityDeleteError = "Cannot be deleted. This $typeStr is attached to existing applications. Please change the $typeStr of the attached applications first before deletion."
+                                } else {
+                                    entityToDelete = Pair(if (isDonor) "Donor" else "Donee", id!!)
+                                }
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                        ) { Text("DELETE") }
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    TextButton(onClick = { selectedEntityForDetail = null }) { Text("CLOSE") }
+                }
+            },
             title = { Text("More Details", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    val isDonor = entity.containsKey("DonorID")
-                    val isDonee = entity.containsKey("DoneeID")
-                    val isVehicle = entity.containsKey("DonateID")
-
                     if (isDonor || isDonee) {
                         entity.forEach { (key, value) -> DetailRow(formatDatabaseKey(key), value) }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = Color(0xFFEEEEEE))
                         Text("Associated Applications", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                        val id = if (isDonor) entity["DonorID"] else entity["DoneeID"]
-                        val matchingApps = logs.filter { if (isDonor) it[8] == id else it[7] == id }
 
                         if (matchingApps.isEmpty()) {
                             Text("No applications found.", fontSize = 12.sp, color = Color.Gray)
@@ -1113,6 +1089,45 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
         )
     }
 
+    if (entityDeleteError != null) {
+        AlertDialog(
+            onDismissRequest = { entityDeleteError = null },
+            title = { Text("Action Denied") },
+            text = { Text(entityDeleteError!!) },
+            confirmButton = { TextButton(onClick = { entityDeleteError = null }) { Text("OK") } }
+        )
+    }
+
+    if (entityToDelete != null) {
+        val (type, id) = entityToDelete!!
+        AlertDialog(
+            onDismissRequest = { entityToDelete = null },
+            title = { Text("Confirm Deletion") },
+            text = { Text("Are you sure you want to delete $type $id?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val entityId = id
+                    val entityType = type
+                    entityToDelete = null
+                    selectedEntityForDetail = null
+                    scope.launch {
+                        val res = snackbarHostState.showSnackbar("Deleting $entityType $entityId...", "UNDO", duration = SnackbarDuration.Short)
+                        if (res != SnackbarResult.ActionPerformed) {
+                            val dbRes = if (entityType == "Donor") DatabaseService.deleteDonor(entityId) else DatabaseService.deleteDonee(entityId)
+                            dbRes.onSuccess {
+                                Toast.makeText(context, "Deleted!", Toast.LENGTH_SHORT).show()
+                                onRefreshRequested()
+                            }.onFailure {
+                                Toast.makeText(context, "Error: ${it.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }, colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)) { Text("DELETE") }
+            },
+            dismissButton = { TextButton(onClick = { entityToDelete = null }) { Text("CANCEL") } }
+        )
+    }
+
     if (showDeleteConfirmation != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = null },
@@ -1127,11 +1142,7 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
                         if (res != SnackbarResult.ActionPerformed) {
                             DatabaseService.deleteApplication(id).onSuccess {
                                 Toast.makeText(context, "Deleted!", Toast.LENGTH_SHORT).show()
-                                logs = DatabaseService.fetchHistory()
-                                val (dnrs, dnes) = DatabaseService.fetchDonorsAndDoneesDetailed()
-                                donorsDetailed = dnrs; doneesDetailed = dnes
-                                val (mv, pc) = DatabaseService.fetchVehiclesDetailed()
-                                motorVehicles = mv; passengerCars = pc
+                                onRefreshRequested()
                             }
                         }
                     }
@@ -1190,9 +1201,9 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
 
             val sideScroll = rememberScrollState()
 
-            val useScroll = viewCategory == "Donor" || viewCategory == "Donee" || viewCategory == "Passenger Car"
+            val useScroll = isSearching || viewCategory == "Donor" || viewCategory == "Donee" || viewCategory == "Passenger Car"
 
-            val rowWidth = when (viewCategory) {
+            val rowWidth = if (isSearching) 2200.dp else when (viewCategory) {
                 "Passenger Car" -> 1600.dp
                 "Donor", "Donee" -> 1600.dp
                 else -> 2200.dp
@@ -1200,8 +1211,68 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
 
             Box(modifier = Modifier.fillMaxSize().border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(4.dp)).then(if (useScroll) Modifier.horizontalScroll(sideScroll) else Modifier)) {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(1.dp), modifier = Modifier.fillMaxHeight()) {
-                    val finalDataList: List<Any> = if (searchQuery.isNotBlank()) hierarchicalResults else {
-                        when (viewCategory) {
+
+                    if (isSearching) {
+                        val matchedApps = logs.filter { app -> app.any { it.contains(searchQuery, ignoreCase = true) } }
+                        val matchedDonors = donorsDetailed.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
+                        val matchedDonees = doneesDetailed.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
+                        val matchedMotors = motorVehicles.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
+                        val matchedPassengers = passengerCars.filter { it.values.any { v -> v.contains(searchQuery, ignoreCase = true) } }
+
+                        val totalMatches = matchedApps.size + matchedDonors.size + matchedDonees.size + matchedMotors.size + matchedPassengers.size
+
+                        if (totalMatches == 0) {
+                            item { Box(modifier = Modifier.fillParentMaxSize().padding(32.dp), contentAlignment = Alignment.Center) { Text("No results.", style = MaterialTheme.typography.bodyLarge, color = Color.Gray, textAlign = TextAlign.Center) } }
+                        } else {
+                            if (matchedApps.isNotEmpty()) {
+                                stickyHeader {
+                                    SectionHeader("Applications", useScroll, rowWidth)
+                                    TableHeader("Application", useScroll, rowWidth)
+                                }
+                                items(sortData(matchedApps) { it[0] }) { item ->
+                                    AppRow(item, searchQuery, useScroll, rowWidth) { selectedLogForDetail = item }
+                                }
+                            }
+                            if (matchedDonors.isNotEmpty()) {
+                                stickyHeader {
+                                    SectionHeader("Donors", useScroll, rowWidth)
+                                    TableHeader("Donor", useScroll, rowWidth)
+                                }
+                                items(sortData(matchedDonors) { it["DonorID"] ?: "" }) { item ->
+                                    EntityRow("Donor", item, searchQuery, useScroll, rowWidth) { selectedEntityForDetail = item }
+                                }
+                            }
+                            if (matchedDonees.isNotEmpty()) {
+                                stickyHeader {
+                                    SectionHeader("Donees", useScroll, rowWidth)
+                                    TableHeader("Donee", useScroll, rowWidth)
+                                }
+                                items(sortData(matchedDonees) { it["DoneeID"] ?: "" }) { item ->
+                                    EntityRow("Donee", item, searchQuery, useScroll, rowWidth) { selectedEntityForDetail = item }
+                                }
+                            }
+                            if (matchedMotors.isNotEmpty()) {
+                                stickyHeader {
+                                    SectionHeader("Motor Vehicles", useScroll, rowWidth)
+                                    TableHeader("Motor Vehicle", useScroll, rowWidth)
+                                }
+                                items(sortData(matchedMotors) { it["DonateID"] ?: "" }) { item ->
+                                    EntityRow("Motor Vehicle", item, searchQuery, useScroll, rowWidth) { selectedEntityForDetail = item }
+                                }
+                            }
+                            if (matchedPassengers.isNotEmpty()) {
+                                stickyHeader {
+                                    SectionHeader("Passenger Cars", useScroll, rowWidth)
+                                    TableHeader("Passenger Car", useScroll, rowWidth)
+                                }
+                                items(sortData(matchedPassengers) { it["DonateID"] ?: "" }) { item ->
+                                    EntityRow("Passenger Car", item, searchQuery, useScroll, rowWidth) { selectedEntityForDetail = item }
+                                }
+                            }
+                        }
+                    } else {
+                        // Normal non-searching view
+                        val finalDataList: List<Any> = when (viewCategory) {
                             "Application" -> sortData(logs) { it[0] }
                             "Donor" -> sortData(donorsDetailed) { it["DonorID"] ?: "" }
                             "Donee" -> sortData(doneesDetailed) { it["DoneeID"] ?: "" }
@@ -1209,132 +1280,18 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
                             "Passenger Car" -> sortData(passengerCars) { it["DonateID"] ?: "" }
                             else -> emptyList()
                         }
-                    }
 
-                    if (finalDataList.isEmpty()) {
-                        item { Box(modifier = Modifier.fillParentMaxSize().padding(32.dp), contentAlignment = Alignment.Center) { Text("No results.", style = MaterialTheme.typography.bodyLarge, color = Color.Gray, textAlign = TextAlign.Center) } }
-                    } else {
-                        stickyHeader {
-                            val headers = when (viewCategory) {
-                                "Application" -> listOf("APPLICATION ID / DATE", "DONOR / DONEE", "VEHICLE TYPE")
-                                "Donor" -> listOf("DONOR ID", "NAME", "ADDRESS", "TELEPHONE", "FAX", "EMAIL")
-                                "Donee" -> listOf("DONEE ID", "NAME", "ADDRESS", "CONTACT PERSON", "TELEPHONE", "FAX", "EMAIL")
-                                "Motor Vehicle" -> listOf("DONATE ID", "DESCRIPTION", "VEHICLE TARIFF", "ORIGIN", "QUANTITY")
-                                "Passenger Car" -> listOf("DONATE ID / VIN", "REG. DATE / YEAR MODEL", "COLOR", "WEIGHT", "ENGINE NO", "DISPLACEMENT", "FUEL")
-                                else -> listOf("ID", "NAME", "TYPE")
+                        if (finalDataList.isEmpty()) {
+                            item { Box(modifier = Modifier.fillParentMaxSize().padding(32.dp), contentAlignment = Alignment.Center) { Text("No records.", style = MaterialTheme.typography.bodyLarge, color = Color.Gray, textAlign = TextAlign.Center) } }
+                        } else {
+                            stickyHeader {
+                                TableHeader(viewCategory, useScroll, rowWidth)
                             }
-                            Row(modifier = Modifier.then(if (useScroll) Modifier.width(rowWidth) else Modifier.fillMaxWidth()).background(Color(0xFFF1F3F5)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                headers.forEachIndexed { idx, h ->
-                                    val rowModifier = when (viewCategory) {
-                                        "Application" -> when(idx) { 0 -> Modifier.weight(1.5f); 1 -> Modifier.weight(2f); 2 -> Modifier.weight(1.5f); else -> Modifier.width(150.dp) }
-                                        "Motor Vehicle" -> when(idx) { 0 -> Modifier.weight(0.8f); 1 -> Modifier.weight(1.2f); 2 -> Modifier.weight(1f); 3 -> Modifier.weight(1f); 4 -> Modifier.weight(0.6f); else -> Modifier.width(150.dp) }
-                                        "Passenger Car" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(0.8f); 2 -> Modifier.weight(0.8f); 3 -> Modifier.weight(0.8f); 4 -> Modifier.weight(0.8f); 5 -> Modifier.weight(0.8f); 6 -> Modifier.weight(0.8f); else -> Modifier.width(150.dp) }
-                                        "Donor" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2.5f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.8f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
-                                        "Donee" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.5f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(1.5f); 6 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
-                                        else -> Modifier.width(150.dp)
-                                    }
-                                    Text(h, modifier = rowModifier, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.DarkGray, textAlign = TextAlign.Start)
+                            items(finalDataList) { item ->
+                                when (item) {
+                                    is List<*> -> AppRow(item as List<String>, searchQuery, useScroll, rowWidth) { selectedLogForDetail = item }
+                                    is Map<*, *> -> EntityRow(viewCategory, item as Map<String, String>, searchQuery, useScroll, rowWidth) { selectedEntityForDetail = item }
                                 }
-                                Spacer(modifier = Modifier.width(48.dp))
-                            }
-                            HorizontalDivider(color = Color(0xFFE0E0E0))
-                        }
-
-                        items(finalDataList) { item ->
-                            var menuExpanded by remember { mutableStateOf(false) }
-                            Column(modifier = Modifier.then(if (useScroll) Modifier.width(rowWidth) else Modifier.fillMaxWidth()).background(Color.White).padding(12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    when (item) {
-                                        is List<*> -> {
-                                            val log = item as List<String>
-                                            val isMixed = log[6] == "Motor Vehicle / Passenger Car"
-                                            val isPassenger = log[6] == "Passenger Car"
-                                            val badgeBgColor = if (isMixed) Color(0xFFE3F2FD) else if (isPassenger) Color(0xFFE8F5E9) else Color(0xFFFFE0B2)
-                                            val badgeTextColor = if (isMixed) Color(0xFF1565C0) else if (isPassenger) Color(0xFF2E7D32) else Color(0xFFE65100)
-
-                                            Column(modifier = Modifier.weight(1.5f)) { HighlightedText(log[0], searchQuery, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)); Text(log[1].split(" ")[0], fontSize = 10.sp, color = Color.Gray) }
-                                            Column(modifier = Modifier.weight(2f)) { HighlightedText(log[3], searchQuery, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)); HighlightedText(log[2], searchQuery, style = TextStyle(fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Light)) }
-                                            Box(modifier = Modifier.weight(1.5f).clip(RoundedCornerShape(4.dp)).background(badgeBgColor).padding(horizontal = 6.dp, vertical = 2.dp), contentAlignment = Alignment.CenterStart) { Text(log[6], fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeTextColor) }
-                                            Box(modifier = Modifier.width(48.dp)) {
-                                                IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, null) }
-                                                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                                                    DropdownMenuItem(
-                                                        text = { Text("More Details") },
-                                                        onClick = { selectedLogForDetail = log; menuExpanded = false }
-                                                    )
-                                                    DropdownMenuItem(
-                                                        text = { Text("Edit Application") },
-                                                        onClick = {
-                                                            menuExpanded = false
-                                                            navController.navigate("edit/${log[0]}")
-                                                        }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        is Map<*, *> -> {
-                                            val map = item as Map<String, String>
-
-                                            val isDonor = map.containsKey("DonorID")
-                                            val isDonee = map.containsKey("DoneeID")
-                                            val isVehicle = map.containsKey("DonateID")
-                                            val isPassenger = map.containsKey("VIN") && map["VIN"] != "NULL"
-
-                                            val viewFields = when {
-                                                isDonor -> listOf(map["DonorID"], map["DonorName"], map["DonorAddress"], map["DonorTelNo"], map["DonorFaxNo"], map["DonorEmail"])
-                                                isDonee -> listOf(map["DoneeID"], map["DoneeName"], map["DoneeAddress"], map["ContactPerson"], map["DoneeTelNo"], map["DoneeFaxNo"], map["DoneeEmail"])
-                                                isPassenger -> listOf(
-                                                    map["DonateID"],
-                                                    map["RegistrationDate"],
-                                                    map["Color"],
-                                                    map["VehicleWeight"],
-                                                    map["EngineNumber"],
-                                                    map["EngineDisplacement"],
-                                                    map["FuelType"]
-                                                )
-                                                isVehicle -> listOf(map["DonateID"], map["VehicleDescription"], map["TariffCode"], map["Origin"], map["Quantity"])
-                                                else -> listOf("ERR: Unmapped Data")
-                                            }
-
-                                            viewFields.forEachIndexed { idx, value ->
-                                                val cellModifier = when (viewCategory) {
-                                                    "Motor Vehicle" -> when(idx) { 0 -> Modifier.weight(0.8f); 1 -> Modifier.weight(1.2f); 2 -> Modifier.weight(1f); 3 -> Modifier.weight(1f); 4 -> Modifier.weight(0.6f); else -> Modifier.width(150.dp) }
-                                                    "Passenger Car" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(0.8f); 2 -> Modifier.weight(0.8f); 3 -> Modifier.weight(0.8f); 4 -> Modifier.weight(0.8f); 5 -> Modifier.weight(0.8f); 6 -> Modifier.weight(0.8f); else -> Modifier.width(150.dp) }
-                                                    "Donor" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2.5f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.8f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
-                                                    "Donee" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.5f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(1.5f); 6 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
-                                                    else -> Modifier.width(150.dp)
-                                                }
-
-                                                Box(modifier = cellModifier, contentAlignment = Alignment.TopStart) {
-                                                    if (viewCategory == "Passenger Car") {
-                                                        when (idx) {
-                                                            0 -> {
-                                                                Column {
-                                                                    HighlightedText(text = map["DonateID"] ?: "N/A", query = searchQuery, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary))
-                                                                    Text(text = map["VIN"] ?: "N/A", fontSize = 10.sp, color = Color.Gray)
-                                                                }
-                                                            }
-                                                            1 -> {
-                                                                Column {
-                                                                    HighlightedText(text = map["RegistrationDate"] ?: "N/A", query = searchQuery, style = TextStyle(fontSize = 12.sp))
-                                                                    Text(text = map["YearModel"] ?: "N/A", fontSize = 10.sp, color = Color.Gray)
-                                                                }
-                                                            }
-                                                            else -> {
-                                                                HighlightedText(text = value ?: "", query = searchQuery, style = TextStyle(fontSize = 12.sp))
-                                                            }
-                                                        }
-                                                    } else {
-                                                        HighlightedText(text = value ?: "", query = searchQuery, style = if(idx == 0) TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary) else TextStyle(fontSize = 12.sp))
-                                                    }
-                                                }
-                                            }
-
-                                            Box(modifier = Modifier.width(48.dp)) { IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, null) }; DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) { DropdownMenuItem(text = { Text("More Details") }, onClick = { selectedEntityForDetail = map; menuExpanded = false }) } }
-                                        }
-                                    }
-                                }
-                                HorizontalDivider(modifier = Modifier.padding(top = 12.dp), color = Color(0xFFF0F0F0))
                             }
                         }
                     }
@@ -1342,6 +1299,582 @@ fun HistoryLogScreen(navController: NavHostController, refreshTrigger: Long) {
             }
         }
     }
+}
+
+@Composable
+fun SectionHeader(title: String, useScroll: Boolean, rowWidth: Dp) {
+    Box(modifier = Modifier.then(if(useScroll) Modifier.width(rowWidth) else Modifier.fillMaxWidth()).background(Color(0xFFE3E8EE)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+        Text(title, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+    }
+}
+
+@Composable
+fun TableHeader(category: String, useScroll: Boolean, rowWidth: Dp) {
+    val headers = when (category) {
+        "Application" -> listOf("APPLICATION ID / DATE", "DONOR / DONEE", "VEHICLE TYPE")
+        "Donor" -> listOf("DONOR ID", "NAME", "ADDRESS", "TELEPHONE", "FAX", "EMAIL")
+        "Donee" -> listOf("DONEE ID", "NAME", "ADDRESS", "CONTACT PERSON", "TELEPHONE", "FAX", "EMAIL")
+        "Motor Vehicle" -> listOf("DONATE ID", "DESCRIPTION", "VEHICLE TARIFF", "ORIGIN", "QUANTITY")
+        "Passenger Car" -> listOf("DONATE ID / VIN", "REG. DATE / YEAR MODEL", "COLOR", "WEIGHT", "ENGINE NO", "DISPLACEMENT", "FUEL")
+        else -> listOf("ID", "NAME", "TYPE")
+    }
+    Column(modifier = Modifier.then(if (useScroll) Modifier.width(rowWidth) else Modifier.fillMaxWidth()).background(Color(0xFFF1F3F5))) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            headers.forEachIndexed { idx, h ->
+                val rowModifier = when (category) {
+                    "Application" -> when(idx) { 0 -> Modifier.weight(1.5f); 1 -> Modifier.weight(2f); 2 -> Modifier.weight(1.5f); else -> Modifier.width(150.dp) }
+                    "Motor Vehicle" -> when(idx) { 0 -> Modifier.weight(0.8f); 1 -> Modifier.weight(1.2f); 2 -> Modifier.weight(1f); 3 -> Modifier.weight(1f); 4 -> Modifier.weight(0.6f); else -> Modifier.width(150.dp) }
+                    "Passenger Car" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(0.8f); 2 -> Modifier.weight(0.8f); 3 -> Modifier.weight(0.8f); 4 -> Modifier.weight(0.8f); 5 -> Modifier.weight(0.8f); 6 -> Modifier.weight(0.8f); else -> Modifier.width(150.dp) }
+                    "Donor" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2.5f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.8f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
+                    "Donee" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.5f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(1.5f); 6 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
+                    else -> Modifier.width(150.dp)
+                }
+                Text(h, modifier = rowModifier, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.DarkGray, textAlign = TextAlign.Start)
+            }
+            Spacer(modifier = Modifier.width(48.dp))
+        }
+        HorizontalDivider(color = Color(0xFFE0E0E0))
+    }
+}
+
+@Composable
+fun AppRow(log: List<String>, searchQuery: String, useScroll: Boolean, rowWidth: Dp, onMoreDetails: () -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val isMixed = log[6] == "Motor Vehicle / Passenger Car"
+    val isPassenger = log[6] == "Passenger Car"
+    val badgeBgColor = if (isMixed) Color(0xFFE3F2FD) else if (isPassenger) Color(0xFFE8F5E9) else Color(0xFFFFE0B2)
+    val badgeTextColor = if (isMixed) Color(0xFF1565C0) else if (isPassenger) Color(0xFF2E7D32) else Color(0xFFE65100)
+
+    Column(modifier = Modifier.then(if (useScroll) Modifier.width(rowWidth) else Modifier.fillMaxWidth()).background(Color.White).padding(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1.5f)) { HighlightedText(log[0], searchQuery, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)); Text(log[1].split(" ")[0], fontSize = 10.sp, color = Color.Gray) }
+            Column(modifier = Modifier.weight(2f)) { HighlightedText(log[3], searchQuery, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)); HighlightedText(log[2], searchQuery, style = TextStyle(fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Light)) }
+            Box(modifier = Modifier.weight(1.5f).clip(RoundedCornerShape(4.dp)).background(badgeBgColor).padding(horizontal = 6.dp, vertical = 2.dp), contentAlignment = Alignment.CenterStart) { Text(log[6], fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeTextColor) }
+            Box(modifier = Modifier.width(48.dp)) {
+                IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, null) }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("More Details") }, onClick = { onMoreDetails(); menuExpanded = false })
+                }
+            }
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp), color = Color(0xFFF0F0F0))
+    }
+}
+
+@Composable
+fun EntityRow(category: String, map: Map<String, String>, searchQuery: String, useScroll: Boolean, rowWidth: Dp, onMoreDetails: () -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val isDonor = map.containsKey("DonorID")
+    val isDonee = map.containsKey("DoneeID")
+    val isVehicle = map.containsKey("DonateID")
+    val isPassenger = map.containsKey("VIN") && map["VIN"] != "NULL"
+
+    val viewFields = when {
+        isDonor -> listOf(map["DonorID"], map["DonorName"], map["DonorAddress"], map["DonorTelNo"], map["DonorFaxNo"], map["DonorEmail"])
+        isDonee -> listOf(map["DoneeID"], map["DoneeName"], map["DoneeAddress"], map["ContactPerson"], map["DoneeTelNo"], map["DoneeFaxNo"], map["DoneeEmail"])
+        isPassenger -> listOf(
+            map["DonateID"],
+            map["RegistrationDate"],
+            map["Color"],
+            map["VehicleWeight"],
+            map["EngineNumber"],
+            map["EngineDisplacement"],
+            map["FuelType"]
+        )
+        isVehicle -> listOf(map["DonateID"], map["VehicleDescription"], map["TariffCode"], map["Origin"], map["Quantity"])
+        else -> listOf("ERR: Unmapped Data")
+    }
+
+    Column(modifier = Modifier.then(if (useScroll) Modifier.width(rowWidth) else Modifier.fillMaxWidth()).background(Color.White).padding(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            viewFields.forEachIndexed { idx, value ->
+                val cellModifier = when (category) {
+                    "Motor Vehicle" -> when(idx) { 0 -> Modifier.weight(0.8f); 1 -> Modifier.weight(1.2f); 2 -> Modifier.weight(1f); 3 -> Modifier.weight(1f); 4 -> Modifier.weight(0.6f); else -> Modifier.width(150.dp) }
+                    "Passenger Car" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(0.8f); 2 -> Modifier.weight(0.8f); 3 -> Modifier.weight(0.8f); 4 -> Modifier.weight(0.8f); 5 -> Modifier.weight(0.8f); 6 -> Modifier.weight(0.8f); else -> Modifier.width(150.dp) }
+                    "Donor" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2.5f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.8f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
+                    "Donee" -> when(idx) { 0 -> Modifier.weight(1.2f); 1 -> Modifier.weight(2f); 2 -> Modifier.weight(2.5f); 3 -> Modifier.weight(1.5f); 4 -> Modifier.weight(1.5f); 5 -> Modifier.weight(1.5f); 6 -> Modifier.weight(2f); else -> Modifier.width(150.dp) }
+                    else -> Modifier.width(150.dp)
+                }
+
+                Box(modifier = cellModifier, contentAlignment = Alignment.TopStart) {
+                    if (category == "Passenger Car") {
+                        when (idx) {
+                            0 -> {
+                                Column {
+                                    HighlightedText(text = map["DonateID"] ?: "N/A", query = searchQuery, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary))
+                                    Text(text = map["VIN"] ?: "N/A", fontSize = 10.sp, color = Color.Gray)
+                                }
+                            }
+                            1 -> {
+                                Column {
+                                    HighlightedText(text = map["RegistrationDate"] ?: "N/A", query = searchQuery, style = TextStyle(fontSize = 12.sp))
+                                    Text(text = map["YearModel"] ?: "N/A", fontSize = 10.sp, color = Color.Gray)
+                                }
+                            }
+                            else -> {
+                                HighlightedText(text = value ?: "", query = searchQuery, style = TextStyle(fontSize = 12.sp))
+                            }
+                        }
+                    } else {
+                        HighlightedText(text = value ?: "", query = searchQuery, style = if(idx == 0) TextStyle(fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary) else TextStyle(fontSize = 12.sp))
+                    }
+                }
+            }
+
+            Box(modifier = Modifier.width(48.dp)) {
+                IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, null) }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("More Details") }, onClick = { onMoreDetails(); menuExpanded = false })
+                }
+            }
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp), color = Color(0xFFF0F0F0))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditApplicationDialog(
+    appId: String,
+    initialLog: List<String>,
+    donorsDetailed: List<Map<String, String>>,
+    doneesDetailed: List<Map<String, String>>,
+    motorVehicles: List<Map<String, String>>,
+    passengerCars: List<Map<String, String>>,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isSaving by remember { mutableStateOf(false) }
+
+    // Track unsaved modifications
+    var hasUnsavedChanges by remember { mutableStateOf(false) }
+    var showCancelDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<Pair<String, Int>?>(null) } // Tracks "MV" or "PC" and index to delete
+
+    val originalSigPath = initialLog.getOrElse(9) { "" }
+
+    // Donee State
+    var doneeSelection by remember { mutableStateOf(initialLog[7]) }
+    var isNewDonee by remember { mutableStateOf(false) }
+    var doneeName by remember { mutableStateOf("") }
+    var doneeAddr by remember { mutableStateOf("") }
+    var doneeContact by remember { mutableStateOf("") }
+    var doneeTel by remember { mutableStateOf("") }
+    var doneeFax by remember { mutableStateOf("") }
+    var doneeEmail by remember { mutableStateOf("") }
+
+    // Donor State
+    var donorSelection by remember { mutableStateOf(initialLog[8]) }
+    var isNewDonor by remember { mutableStateOf(false) }
+    var donorName by remember { mutableStateOf("") }
+    var donorAddr by remember { mutableStateOf("") }
+    var donorTel by remember { mutableStateOf("") }
+    var donorFax by remember { mutableStateOf("") }
+    var donorEmail by remember { mutableStateOf("") }
+
+    // Vehicles State
+    val draftMVs = remember { mutableStateListOf<MutableMap<String, String>>() }
+    val draftPCs = remember { mutableStateListOf<MutableMap<String, String>>() }
+
+    LaunchedEffect(Unit) {
+        draftMVs.addAll(motorVehicles.filter { it["ApplicationID"] == appId }.map {
+            mutableMapOf("desc" to (it["VehicleDescription"] ?: ""), "tariffCode" to (it["TariffCode"] ?: ""), "origin" to (it["Origin"] ?: ""), "qty" to (it["Quantity"] ?: ""))
+        })
+        draftPCs.addAll(passengerCars.filter { it["ApplicationID"] == appId }.map {
+            mutableMapOf(
+                "desc" to (it["VehicleDescription"] ?: ""), "tariffCode" to (it["TariffCode"] ?: ""), "origin" to (it["Origin"] ?: ""),
+                "vin" to (it["VIN"] ?: ""), "year" to (it["YearModel"] ?: ""), "color" to (it["Color"] ?: ""),
+                "regDate" to (it["RegistrationDate"] ?: ""), "weight" to (it["VehicleWeight"] ?: ""),
+                "engineNo" to (it["EngineNumber"] ?: ""), "displacement" to (it["EngineDisplacement"] ?: ""), "fuelType" to (it["FuelType"] ?: "G")
+            )
+        })
+    }
+
+    val requestDismiss = {
+        if (hasUnsavedChanges) showCancelDialog = true else onDismiss()
+    }
+
+    // Unsaved Changes Dialog
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = false },
+            title = { Text("Discard Changes?") },
+            text = { Text("You have unsaved changes. Are you sure you want to discard them?") },
+            confirmButton = {
+                TextButton(
+                    onClick = { showCancelDialog = false; onDismiss() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) { Text("DISCARD") }
+            },
+            dismissButton = { TextButton(onClick = { showCancelDialog = false }) { Text("KEEP EDITING") } }
+        )
+    }
+
+    // Vehicle Deletion Confirmation Dialog
+    if (itemToDelete != null) {
+        val typeStr = if (itemToDelete!!.first == "MV") "Motor Vehicle" else "Passenger Car"
+        AlertDialog(
+            onDismissRequest = { itemToDelete = null },
+            title = { Text("Delete $typeStr") },
+            text = { Text("Are you sure you want to remove this vehicle from the application?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        hasUnsavedChanges = true
+                        if (itemToDelete!!.first == "MV") draftMVs.removeAt(itemToDelete!!.second)
+                        else draftPCs.removeAt(itemToDelete!!.second)
+                        itemToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) { Text("DELETE") }
+            },
+            dismissButton = { TextButton(onClick = { itemToDelete = null }) { Text("CANCEL") } }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = requestDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    // Start Validation Checks before saving
+                    if (isNewDonee) {
+                        if (doneeName.isBlank() || doneeAddr.isBlank() || doneeContact.isBlank()) { Toast.makeText(context, "Please fill in all required Donee fields.", Toast.LENGTH_SHORT).show(); return@Button }
+                        if (doneeTel.isBlank() && doneeFax.isBlank() && doneeEmail.isBlank()) { Toast.makeText(context, "Please provide at least one Donee contact method.", Toast.LENGTH_SHORT).show(); return@Button }
+                    }
+                    if (isNewDonor) {
+                        if (donorName.isBlank() || donorAddr.isBlank()) { Toast.makeText(context, "Please fill in all required Donor fields.", Toast.LENGTH_SHORT).show(); return@Button }
+                        if (donorTel.isBlank() && donorFax.isBlank() && donorEmail.isBlank()) { Toast.makeText(context, "Please provide at least one Donor contact method.", Toast.LENGTH_SHORT).show(); return@Button }
+                    }
+                    if (draftMVs.isEmpty() && draftPCs.isEmpty()) { Toast.makeText(context, "Please include at least one vehicle in the application.", Toast.LENGTH_SHORT).show(); return@Button }
+
+                    for ((idx, mv) in draftMVs.withIndex()) {
+                        if (mv["desc"].isNullOrBlank() || mv["tariffCode"].isNullOrBlank() || mv["origin"].isNullOrBlank() || mv["qty"].isNullOrBlank()) {
+                            Toast.makeText(context, "Motor Vehicle #${idx + 1} has missing required fields.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (mv["tariffCode"]?.length != 4) { Toast.makeText(context, "Motor Vehicle #${idx + 1} Tariff Code must be 4 digits.", Toast.LENGTH_SHORT).show(); return@Button }
+                        val qty = mv["qty"]?.toIntOrNull()
+                        if (qty == null || qty <= 0) { Toast.makeText(context, "Motor Vehicle #${idx + 1} must have a valid quantity greater than 0.", Toast.LENGTH_SHORT).show(); return@Button }
+                    }
+
+                    for ((idx, pc) in draftPCs.withIndex()) {
+                        if (pc["desc"].isNullOrBlank() || pc["tariffCode"].isNullOrBlank() || pc["origin"].isNullOrBlank() ||
+                            pc["vin"].isNullOrBlank() || pc["year"].isNullOrBlank() || pc["color"].isNullOrBlank() ||
+                            pc["regDate"].isNullOrBlank() || pc["weight"].isNullOrBlank() || pc["engineNo"].isNullOrBlank() ||
+                            pc["displacement"].isNullOrBlank() || pc["fuelType"].isNullOrBlank()) {
+                            Toast.makeText(context, "Passenger Car #${idx + 1} has missing required fields.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (pc["tariffCode"]?.length != 4) { Toast.makeText(context, "Passenger Car #${idx + 1} Tariff Code must be 4 digits.", Toast.LENGTH_SHORT).show(); return@Button }
+                        val year = pc["year"]?.toIntOrNull()
+                        if (year == null || year < 1900 || year > 2100) { Toast.makeText(context, "Passenger Car #${idx + 1} must have a valid 4-digit Year.", Toast.LENGTH_SHORT).show(); return@Button }
+                    }
+
+                    // Passed validation, execute save
+                    scope.launch {
+                        isSaving = true
+                        val payload = mapOf(
+                            "DoneeStatus" to if (isNewDonee) "new" else "existing",
+                            "ExistingDoneeID" to doneeSelection,
+                            "DoneeName" to doneeName, "DoneeAddress" to doneeAddr, "ContactPerson" to doneeContact, "DoneeTelNo" to doneeTel, "DoneeFaxNo" to doneeFax, "DoneeEmail" to doneeEmail,
+                            "DonorStatus" to if (isNewDonor) "new" else "existing",
+                            "ExistingDonorID" to donorSelection,
+                            "DonorName" to donorName, "DonorAddress" to donorAddr, "DonorTelNo" to donorTel, "DonorFaxNo" to donorFax, "DonorEmail" to donorEmail,
+                            "DonorSignaturePath" to originalSigPath
+                        )
+                        DatabaseService.updateVehicleApplication(appId, payload, draftMVs, draftPCs).onSuccess {
+                            Toast.makeText(context, "Saved changes!", Toast.LENGTH_SHORT).show()
+                            onSave()
+                        }.onFailure {
+                            Toast.makeText(context, "Error updating: ${it.message}", Toast.LENGTH_LONG).show()
+                        }
+                        isSaving = false
+                    }
+                },
+                enabled = !isSaving
+            ) {
+                if (isSaving) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White) else Text("SAVE CHANGES", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = { TextButton(onClick = requestDismiss, enabled = !isSaving) { Text("CANCEL") } },
+        title = { Text("Editing $appId Details...", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                // ---- DONEE SECTION ----
+                Text("Donee Details", fontWeight = FontWeight.Bold)
+                var doneeExpanded by remember { mutableStateOf(false) }
+                val currentDoneeDisplay = if (isNewDonee) "New Donee..." else doneesDetailed.find { it["DoneeID"] == doneeSelection }?.get("DoneeName") ?: "Select Donee"
+
+                ExposedDropdownMenuBox(expanded = doneeExpanded, onExpandedChange = { doneeExpanded = it }) {
+                    OutlinedTextField(
+                        value = currentDoneeDisplay, onValueChange = {}, readOnly = true,
+                        label = { Text("Assigned Donee") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = doneeExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(), shape = RoundedCornerShape(8.dp)
+                    )
+                    ExposedDropdownMenu(expanded = doneeExpanded, onDismissRequest = { doneeExpanded = false }) {
+                        doneesDetailed.forEach { d ->
+                            DropdownMenuItem(
+                                text = { Text("${d["DoneeName"]} (${d["DoneeID"]})") },
+                                onClick = { doneeSelection = d["DoneeID"]!!; isNewDonee = false; doneeExpanded = false; hasUnsavedChanges = true }
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("+ Add New Donee", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
+                            onClick = { isNewDonee = true; doneeExpanded = false; hasUnsavedChanges = true }
+                        )
+                    }
+                }
+                if (isNewDonee) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = doneeName, onValueChange = { doneeName = it; hasUnsavedChanges = true }, label = { Text("New Donee Name *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            OutlinedTextField(value = doneeAddr, onValueChange = { doneeAddr = it; hasUnsavedChanges = true }, label = { Text("Address *") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(value = doneeContact, onValueChange = { doneeContact = it; hasUnsavedChanges = true }, label = { Text("Contact Person *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            Text("Contact Details (Choose at least one *):", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+                            OutlinedTextField(value = doneeTel, onValueChange = { doneeTel = it; hasUnsavedChanges = true }, label = { Text("Telephone") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            OutlinedTextField(value = doneeFax, onValueChange = { doneeFax = it; hasUnsavedChanges = true }, label = { Text("Fax Number") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            OutlinedTextField(value = doneeEmail, onValueChange = { doneeEmail = it; hasUnsavedChanges = true }, label = { Text("Email Address") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                // ---- DONOR SECTION ----
+                Text("Donor Details", fontWeight = FontWeight.Bold)
+                var donorExpanded by remember { mutableStateOf(false) }
+                val currentDonorDisplay = if (isNewDonor) "New Donor..." else donorsDetailed.find { it["DonorID"] == donorSelection }?.get("DonorName") ?: "Select Donor"
+
+                ExposedDropdownMenuBox(expanded = donorExpanded, onExpandedChange = { donorExpanded = it }) {
+                    OutlinedTextField(
+                        value = currentDonorDisplay, onValueChange = {}, readOnly = true,
+                        label = { Text("Assigned Donor") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = donorExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(), shape = RoundedCornerShape(8.dp)
+                    )
+                    ExposedDropdownMenu(expanded = donorExpanded, onDismissRequest = { donorExpanded = false }) {
+                        donorsDetailed.forEach { d ->
+                            DropdownMenuItem(
+                                text = { Text("${d["DonorName"]} (${d["DonorID"]})") },
+                                onClick = { donorSelection = d["DonorID"]!!; isNewDonor = false; donorExpanded = false; hasUnsavedChanges = true }
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("+ Add New Donor", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
+                            onClick = { isNewDonor = true; donorExpanded = false; hasUnsavedChanges = true }
+                        )
+                    }
+                }
+                if (isNewDonor) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = donorName, onValueChange = { donorName = it; hasUnsavedChanges = true }, label = { Text("New Donor Name *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            OutlinedTextField(value = donorAddr, onValueChange = { donorAddr = it; hasUnsavedChanges = true }, label = { Text("Address *") }, modifier = Modifier.fillMaxWidth())
+                            Text("Contact Details (Choose at least one *):", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+                            OutlinedTextField(value = donorTel, onValueChange = { donorTel = it; hasUnsavedChanges = true }, label = { Text("Telephone") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            OutlinedTextField(value = donorFax, onValueChange = { donorFax = it; hasUnsavedChanges = true }, label = { Text("Fax Number") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                            OutlinedTextField(value = donorEmail, onValueChange = { donorEmail = it; hasUnsavedChanges = true }, label = { Text("Email Address") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                // ---- VEHICLES SECTION ----
+                Text("Donated Vehicles", fontWeight = FontWeight.Bold)
+
+                draftMVs.forEachIndexed { idx, mv ->
+                    var isEditingThis by remember { mutableStateOf(false) }
+                    Card(colors = CardDefaults.cardColors(containerColor = if(isEditingThis) Color(0xFFF0F4F8) else Color(0xFFF9F9F9)), border = BorderStroke(1.dp, Color(0xFFEEEEEE)), modifier = Modifier.fillMaxWidth()) {
+                        if (!isEditingThis) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Motor Vehicle: ${mv["desc"]?.ifBlank { "Unspecified" }}", fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                                    Text("Tariff: ${mv["tariffCode"]}, Qty: ${mv["qty"]}", fontSize = 11.sp, color = Color.Gray)
+                                }
+                                IconButton(onClick = { isEditingThis = true }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
+                                IconButton(onClick = { itemToDelete = Pair("MV", idx) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(18.dp), tint = Color.Red) }
+                            }
+                        } else {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Editing Motor Vehicle", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                                OutlinedTextField(value = mv["desc"] ?: "", onValueChange = { draftMVs[idx] = draftMVs[idx].toMutableMap().apply{ put("desc", it) }; hasUnsavedChanges = true }, label = { Text("Description *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                                OutlinedTextField(value = mv["origin"] ?: "", onValueChange = { draftMVs[idx] = draftMVs[idx].toMutableMap().apply{ put("origin", it) }; hasUnsavedChanges = true }, label = { Text("Origin *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedTextField(value = mv["tariffCode"] ?: "", onValueChange = { val f = it.filter { c -> c.isDigit() }.take(4); draftMVs[idx] = draftMVs[idx].toMutableMap().apply{ put("tariffCode", f) }; hasUnsavedChanges = true }, label = { Text("Tariff *") }, modifier = Modifier.weight(1f), singleLine = true)
+                                    OutlinedTextField(value = mv["qty"] ?: "", onValueChange = { val f = it.filter { c -> c.isDigit() }; draftMVs[idx] = draftMVs[idx].toMutableMap().apply{ put("qty", f) }; hasUnsavedChanges = true }, label = { Text("Qty *") }, modifier = Modifier.weight(1f), singleLine = true)
+                                }
+                                TextButton(onClick = { isEditingThis = false }, modifier = Modifier.align(Alignment.End)) { Text("Done") }
+                            }
+                        }
+                    }
+                }
+
+                draftPCs.forEachIndexed { idx, pc ->
+                    var isEditingThis by remember { mutableStateOf(false) }
+                    Card(colors = CardDefaults.cardColors(containerColor = if(isEditingThis) Color(0xFFF0F4F8) else Color(0xFFF9F9F9)), border = BorderStroke(1.dp, Color(0xFFEEEEEE)), modifier = Modifier.fillMaxWidth()) {
+                        if (!isEditingThis) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Passenger Car: ${pc["desc"]?.ifBlank { "Unspecified" }}", fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                                    Text("VIN: ${pc["vin"]}, Year: ${pc["year"]}", fontSize = 11.sp, color = Color.Gray)
+                                }
+                                IconButton(onClick = { isEditingThis = true }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
+                                IconButton(onClick = { itemToDelete = Pair("PC", idx) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(18.dp), tint = Color.Red) }
+                            }
+                        } else {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Editing Passenger Car", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                                OutlinedTextField(value = pc["desc"] ?: "", onValueChange = { draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("desc", it) }; hasUnsavedChanges = true }, label = { Text("Description *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                                OutlinedTextField(value = pc["vin"] ?: "", onValueChange = { draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("vin", it) }; hasUnsavedChanges = true }, label = { Text("VIN *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                                OutlinedTextField(value = pc["origin"] ?: "", onValueChange = { draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("origin", it) }; hasUnsavedChanges = true }, label = { Text("Origin *") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedTextField(value = pc["tariffCode"] ?: "", onValueChange = { val f = it.filter { c -> c.isDigit() }.take(4); draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("tariffCode", f) }; hasUnsavedChanges = true }, label = { Text("Tariff *") }, modifier = Modifier.weight(1f), singleLine = true)
+                                    OutlinedTextField(value = pc["year"] ?: "", onValueChange = { val f = it.filter { c -> c.isDigit() }.take(4); draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("year", f) }; hasUnsavedChanges = true }, label = { Text("Year *") }, modifier = Modifier.weight(1f), singleLine = true)
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedTextField(value = pc["color"] ?: "", onValueChange = { draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("color", it) }; hasUnsavedChanges = true }, label = { Text("Color *") }, modifier = Modifier.weight(1f), singleLine = true)
+                                    OutlinedTextField(
+                                        value = pc["weight"]?.filter { it.isDigit() } ?: "",
+                                        onValueChange = { newVal ->
+                                            val digitsOnly = newVal.filter { it.isDigit() }
+                                            draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("weight", if (digitsOnly.isNotBlank()) "$digitsOnly kg" else "") }
+                                            hasUnsavedChanges = true
+                                        },
+                                        label = { Text("Weight *") },
+                                        suffix = { Text("kg", color = Color.Gray) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true
+                                    )
+                                }
+
+                                // --- DATE PICKER FOR EDIT MODE ---
+                                var showDatePicker by remember { mutableStateOf(false) }
+
+                                if (showDatePicker) {
+                                    val initialMillis = remember {
+                                        try {
+                                            val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                            format.timeZone = TimeZone.getTimeZone("UTC")
+                                            pc["regDate"]?.takeIf { it.isNotBlank() }?.let { format.parse(it)?.time }
+                                        } catch (e: Exception) { null }
+                                    }
+                                    val datePickerState = rememberDatePickerState(
+                                        initialSelectedDateMillis = initialMillis,
+                                        selectableDates = object : SelectableDates {
+                                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                                return utcTimeMillis <= System.currentTimeMillis()
+                                            }
+                                        }
+                                    )
+
+                                    DatePickerDialog(
+                                        onDismissRequest = { showDatePicker = false },
+                                        confirmButton = {
+                                            TextButton(onClick = {
+                                                datePickerState.selectedDateMillis?.let { millis ->
+                                                    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                                    formatter.timeZone = TimeZone.getTimeZone("UTC")
+                                                    val formattedDate = formatter.format(Date(millis))
+                                                    draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("regDate", formattedDate) }
+                                                    hasUnsavedChanges = true
+                                                }
+                                                showDatePicker = false
+                                            }) { Text("OK") }
+                                        },
+                                        dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("CANCEL") } }
+                                    ) {
+                                        DatePicker(state = datePickerState)
+                                    }
+                                }
+
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(
+                                        value = pc["regDate"] ?: "",
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        label = { Text("Registration Date *") },
+                                        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Select Date") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true })
+                                }
+                                // ---------------------------------
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedTextField(value = pc["engineNo"] ?: "", onValueChange = { draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("engineNo", it) }; hasUnsavedChanges = true }, label = { Text("Engine No *") }, modifier = Modifier.weight(1f), singleLine = true)
+                                    OutlinedTextField(
+                                        value = pc["displacement"]?.filter { it.isDigit() } ?: "",
+                                        onValueChange = { newVal ->
+                                            val digitsOnly = newVal.filter { it.isDigit() }
+                                            draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("displacement", if (digitsOnly.isNotBlank()) "$digitsOnly cc" else "") }
+                                            hasUnsavedChanges = true
+                                        },
+                                        label = { Text("Displacement *") },
+                                        suffix = { Text("cc", color = Color.Gray) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true
+                                    )
+                                }
+
+                                var fuelExpanded by remember { mutableStateOf(false) }
+                                val fuelOptions = listOf("G: Gas" to "G", "D: Diesel" to "D", "LPG: Liquid Petroleum Gas" to "LPG", "E: Electric" to "E", "H: Hydrogen Fuel" to "H")
+                                val currentFuelCode = pc["fuelType"] ?: "G"
+                                val currentFuelDisplay = fuelOptions.find { it.second == currentFuelCode }?.first ?: "Gas"
+
+                                ExposedDropdownMenuBox(expanded = fuelExpanded, onExpandedChange = { fuelExpanded = !fuelExpanded }, modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(value = currentFuelDisplay, onValueChange = {}, readOnly = true, label = { Text("Fuel Type *") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fuelExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+                                    ExposedDropdownMenu(expanded = fuelExpanded, onDismissRequest = { fuelExpanded = false }) {
+                                        fuelOptions.forEach { (displayStr, dbCode) ->
+                                            DropdownMenuItem(
+                                                text = { Text(displayStr) },
+                                                onClick = { draftPCs[idx] = draftPCs[idx].toMutableMap().apply{ put("fuelType", dbCode) }; fuelExpanded = false; hasUnsavedChanges = true }
+                                            )
+                                        }
+                                    }
+                                }
+                                TextButton(onClick = { isEditingThis = false }, modifier = Modifier.align(Alignment.End)) { Text("Done") }
+                            }
+                        }
+                    }
+                }
+
+                // Check overall vehicle count
+                val totalVehicles = draftMVs.size + draftPCs.size
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (totalVehicles < 4) {
+                        OutlinedButton(
+                            onClick = { draftMVs.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "qty" to "1")); hasUnsavedChanges = true },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("+ Motor Vehicle", fontSize = 11.sp) }
+                    }
+                    if (totalVehicles < 4 && draftPCs.isEmpty()) {
+                        OutlinedButton(
+                            onClick = { draftPCs.add(mutableMapOf("desc" to "", "tariffCode" to "", "origin" to "", "vin" to "", "year" to "", "color" to "", "regDate" to "", "weight" to "", "engineNo" to "", "displacement" to "", "fuelType" to "G")); hasUnsavedChanges = true },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("+ Pass. Car", fontSize = 11.sp) }
+                    }
+                }
+
+                // Show limit warnings if applicable
+                if (totalVehicles >= 4) {
+                    Text(text = "Combined maximum of 4 vehicles reached.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.align(Alignment.End))
+                } else if (draftPCs.isNotEmpty()) {
+                    Text(text = "Maximum of 1 Passenger Car allowed per application.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.align(Alignment.End))
+                }
+            }
+        }
+    )
 }
 
 @Composable
