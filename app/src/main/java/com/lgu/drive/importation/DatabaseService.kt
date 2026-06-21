@@ -237,14 +237,11 @@ object DatabaseService {
             val doneeId = if (doneeStatus == "existing") formData["ExistingDoneeID"] as String else {
                 var maxNum = 0
                 conn.createStatement().use { stmt ->
-                    // Get highest number after the 'DON' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DoneeID, 4) AS UNSIGNED)) FROM donee").use { rs ->
                         if (rs.next()) maxNum = rs.getInt(1)
                     }
                 }
-                // Pad to 4 digits: DON0010
                 val id = String.format("DON%04d", maxNum + 1)
-
                 conn.prepareStatement("INSERT INTO donee VALUES (?,?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DoneeName"] as String)
                     ps.setString(3, formData["DoneeAddress"] as String); ps.setString(4, formData["ContactPerson"] as String)
@@ -258,14 +255,11 @@ object DatabaseService {
             val donorId = if (donorStatus == "existing") formData["ExistingDonorID"] as String else {
                 var maxNum = 0
                 conn.createStatement().use { stmt ->
-                    // Get highest number after the 'DOR' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonorID, 4) AS UNSIGNED)) FROM donor").use { rs ->
                         if (rs.next()) maxNum = rs.getInt(1)
                     }
                 }
-                // Pad to 4 digits: DOR0010
                 val id = String.format("DOR%04d", maxNum + 1)
-
                 conn.prepareStatement("INSERT INTO donor (DonorID, DonorName, DonorAddress, DonorTelNo, DonorFaxNo, DonorEmail) VALUES (?,?,?,?,?,?)").use { ps ->
                     ps.setString(1, id); ps.setString(2, formData["DonorName"] as String)
                     ps.setString(3, formData["DonorAddress"] as String); ps.setString(4, formData["DonorTelNo"] as String)
@@ -277,12 +271,10 @@ object DatabaseService {
 
             var maxAppNum = 0
             conn.createStatement().use { stmt ->
-                // Get highest number after the 'APP-' prefix (length 4)
                 stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(ApplicationID, 5) AS UNSIGNED)) FROM application").use { rs ->
                     if (rs.next()) maxAppNum = rs.getInt(1)
                 }
             }
-            // Pad to 4 digits: APP-0010
             val appId = String.format("APP-%04d", maxAppNum + 1)
 
             conn.prepareStatement("INSERT INTO application VALUES (?,?,?,?,?)").use { appPs ->
@@ -298,12 +290,10 @@ object DatabaseService {
 
                 var maxAssetNum = 0
                 conn.createStatement().use { stmt ->
-                    // Get highest number after the 'CAR' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
                         if (rs.next()) maxAssetNum = rs.getInt(1)
                     }
                 }
-                // Pad to 4 digits: CAR0010
                 val donateId = String.format("CAR%05d", maxAssetNum + 1)
 
                 conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { ps ->
@@ -318,12 +308,150 @@ object DatabaseService {
             for (pc in passengerCars) {
                 var maxAssetNum = 0
                 conn.createStatement().use { stmt ->
-                    // Get highest number after the 'CAR' prefix (length 3)
                     stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
                         if (rs.next()) maxAssetNum = rs.getInt(1)
                     }
                 }
-                // Pad to 4 digits: CAR0010
+                val donateId = String.format("CAR%05d", maxAssetNum + 1)
+
+                conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { psV ->
+                    psV.setString(1, donateId); psV.setString(2, "Passenger Car")
+                    psV.setString(3, "8703"); psV.setString(4, "Japan")
+                    psV.setInt(5, 1); psV.setString(6, appId); psV.setString(7, "Passenger Car")
+                    psV.executeUpdate()
+                }
+
+                conn.prepareStatement("INSERT INTO passengercar VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)") .use { psC ->
+                    psC.setString(1, (pc["vin"] ?: "").uppercase().trim()); psC.setString(2, donateId)
+                    psC.setInt(3, pc["year"]?.toIntOrNull() ?: 0)
+                    psC.setString(4, pc["color"]?.ifBlank { "N/A" } ?: "N/A")
+                    try { psC.setDate(5, java.sql.Date.valueOf(pc["regDate"] ?: "")) } catch (e: Exception) { psC.setNull(5, java.sql.Types.DATE) }
+                    psC.setString(6, pc["weight"]?.ifBlank { "0" } ?: "0")
+                    psC.setString(7, pc["engineNo"]?.ifBlank { "N/A" } ?: "N/A")
+                    psC.setString(8, pc["displacement"]?.ifBlank { "N/A" } ?: "N/A")
+                    psC.setString(9, pc["fuelType"]?.ifBlank { "G" } ?: "G"); psC.executeUpdate()
+                }
+            }
+
+            conn.commit()
+            Result.success(appId)
+        } catch (e: Exception) {
+            sharedConn?.rollback()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateVehicleApplication(
+        appId: String,
+        formData: Map<String, Any>,
+        motorVehicles: List<Map<String, String>>,
+        passengerCars: List<Map<String, String>>
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val conn = getConnection()
+            conn.autoCommit = false
+
+            // 1. Process Donee Data (Create new if needed)
+            val doneeStatus = formData["DoneeStatus"] as String
+            val doneeId = if (doneeStatus == "existing") formData["ExistingDoneeID"] as String else {
+                var maxNum = 0
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DoneeID, 4) AS UNSIGNED)) FROM donee").use { rs ->
+                        if (rs.next()) maxNum = rs.getInt(1)
+                    }
+                }
+                val id = String.format("DON%04d", maxNum + 1)
+                conn.prepareStatement("INSERT INTO donee VALUES (?,?,?,?,?,?,?)").use { ps ->
+                    ps.setString(1, id); ps.setString(2, formData["DoneeName"] as String)
+                    ps.setString(3, formData["DoneeAddress"] as String); ps.setString(4, formData["ContactPerson"] as String)
+                    ps.setString(5, formData["DoneeTelNo"] as String); ps.setString(6, formData["DoneeFaxNo"] as String)
+                    ps.setString(7, formData["DoneeEmail"] as String); ps.executeUpdate()
+                }
+                id
+            }
+
+            // 2. Process Donor Data (Create new if needed)
+            val donorStatus = formData["DonorStatus"] as String
+            val donorId = if (donorStatus == "existing") formData["ExistingDonorID"] as String else {
+                var maxNum = 0
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonorID, 4) AS UNSIGNED)) FROM donor").use { rs ->
+                        if (rs.next()) maxNum = rs.getInt(1)
+                    }
+                }
+                val id = String.format("DOR%04d", maxNum + 1)
+                conn.prepareStatement("INSERT INTO donor (DonorID, DonorName, DonorAddress, DonorTelNo, DonorFaxNo, DonorEmail) VALUES (?,?,?,?,?,?)").use { ps ->
+                    ps.setString(1, id); ps.setString(2, formData["DonorName"] as String)
+                    ps.setString(3, formData["DonorAddress"] as String); ps.setString(4, formData["DonorTelNo"] as String)
+                    ps.setString(5, formData["DonorFaxNo"] as String); ps.setString(6, formData["DonorEmail"] as String)
+                    ps.executeUpdate()
+                }
+                id
+            }
+
+            // 3. Update the main Application Record with the assigned Donor/Donee
+            val sigPath = formData["DonorSignaturePath"] as String
+            if (sigPath != "NULL" && sigPath.isNotBlank()) {
+                conn.prepareStatement("UPDATE application SET DoneeID = ?, DonorID = ?, DonorSignaturePath = ? WHERE ApplicationID = ?").use { ps ->
+                    ps.setString(1, doneeId)
+                    ps.setString(2, donorId)
+                    ps.setString(3, sigPath)
+                    ps.setString(4, appId)
+                    ps.executeUpdate()
+                }
+            } else {
+                conn.prepareStatement("UPDATE application SET DoneeID = ?, DonorID = ? WHERE ApplicationID = ?").use { ps ->
+                    ps.setString(1, doneeId)
+                    ps.setString(2, donorId)
+                    ps.setString(3, appId)
+                    ps.executeUpdate()
+                }
+            }
+
+            // 4. Wipe old vehicles tied to this application (Clean slate approach for editing)
+            val donateIds = mutableListOf<String>()
+            conn.prepareStatement("SELECT DonateID FROM donatedvehicle WHERE ApplicationID = ?").use { ps ->
+                ps.setString(1, appId)
+                ps.executeQuery().use { rs -> while (rs.next()) donateIds.add(rs.getString(1)) }
+            }
+            for (did in donateIds) {
+                conn.prepareStatement("DELETE FROM passengercar WHERE DonateID = ?").use { ps ->
+                    ps.setString(1, did); ps.executeUpdate()
+                }
+            }
+            conn.prepareStatement("DELETE FROM donatedvehicle WHERE ApplicationID = ?").use { ps ->
+                ps.setString(1, appId); ps.executeUpdate()
+            }
+
+            // 5. Insert the newly provided edited vehicles
+            for (mv in motorVehicles) {
+                val desc = mv["desc"] ?: ""
+                if (desc.isBlank()) continue
+
+                var maxAssetNum = 0
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
+                        if (rs.next()) maxAssetNum = rs.getInt(1)
+                    }
+                }
+                val donateId = String.format("CAR%05d", maxAssetNum + 1)
+
+                conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { ps ->
+                    ps.setString(1, donateId); ps.setString(2, desc)
+                    ps.setString(3, mv["tariffCode"]?.ifBlank { "0" } ?: "0")
+                    ps.setString(4, mv["origin"]?.ifBlank { "N/A" } ?: "N/A")
+                    ps.setInt(5, mv["qty"]?.toIntOrNull() ?: 1); ps.setString(6, appId)
+                    ps.setString(7, "Motor Vehicle"); ps.executeUpdate()
+                }
+            }
+
+            for (pc in passengerCars) {
+                var maxAssetNum = 0
+                conn.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT MAX(CAST(SUBSTRING(DonateID, 4) AS UNSIGNED)) FROM donatedvehicle").use { rs ->
+                        if (rs.next()) maxAssetNum = rs.getInt(1)
+                    }
+                }
                 val donateId = String.format("CAR%05d", maxAssetNum + 1)
 
                 conn.prepareStatement("INSERT INTO donatedvehicle VALUES (?,?,?,?,?,?,?)").use { psV ->
