@@ -13,61 +13,65 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// 1. Colors (Your existing palette)
-private val ModernGovernmentColorScheme = lightColorScheme(
-    primary = Color(0xFF0F4C81),      // Official Deep Classic Blue
-    secondary = Color(0xFF16A085),    // Contemporary Secure Emerald Accents
-    background = Color(0xFFFAFAFA),   // Soft Off-White Background
-    surface = Color(0xFFFFFFFF),      // Crisp Pure White Card Surfaces
+// 1. Colors (Exact Professional Navy & Grey Palette)
+private val ProfessionalBlueColorScheme = lightColorScheme(
+    primary = Color(0xFF20368F),          // Royal Blue
     onPrimary = Color.White,
-    onBackground = Color(0xFF2C3E50), // Deep Charcoal Primary Text
-    onSurface = Color(0xFF2C3E50)
+    primaryContainer = Color(0xFF000B4F), // Dark Navy
+    secondary = Color(0xFF829CD0),        // Light Blue
+    background = Color(0xFFEBEBEB),       // Light Grey App Background
+    surface = Color(0xFFFFFFFF),          // Pure White Cards
+    onBackground = Color(0xFF323232),     // Dark Grey Main Text
+    onSurface = Color(0xFF323232),
+    onSurfaceVariant = Color(0xFF6D6D6D), // Medium Grey Subtext
+    error = Color(0xFFE11D48)
 )
 
-// 2. Typography (For crisp, modern text scaling)
+// 2. Typography (Scaled down for a cleaner, less clunky look)
 private val AppTypography = Typography(
     headlineSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Black,
-        fontSize = 24.sp,
-        letterSpacing = 0.5.sp
+        fontSize = 20.sp, // Scaled down
+        letterSpacing = 0.5.sp,
+        color = Color(0xFF000B4F) // Dark Navy headers
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
+        fontSize = 16.sp, // Scaled down
         letterSpacing = 0.15.sp,
-        color = Color(0xFF0F4C81) // Automatically colors section titles primary blue
+        color = Color(0xFF323232)
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
+        fontSize = 13.sp, // Scaled down
         letterSpacing = 0.25.sp,
-        color = Color(0xFF2C3E50)
+        color = Color(0xFF6D6D6D)
     ),
     labelSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
+        fontSize = 11.sp, // Scaled down
         letterSpacing = 0.5.sp,
-        color = Color.Gray
+        color = Color(0xFF6D6D6D)
     )
 )
 
-// 3. Shapes (To unify the rounded corners across the app)
+// 3. Shapes (Slightly sharper corners for a professional feel)
 private val AppShapes = Shapes(
-    small = RoundedCornerShape(4.dp),   // For small UI elements like checkboxes or badges
-    medium = RoundedCornerShape(8.dp),  // Perfect for Buttons and TextFields
-    large = RoundedCornerShape(12.dp)   // Perfect for the ElevatedCards we added
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp), // Text fields
+    large = RoundedCornerShape(16.dp)   // Cards
 )
 
 @Composable
 fun LguDriveTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = ModernGovernmentColorScheme,
-        typography = AppTypography,     // Injects your font styles
-        shapes = AppShapes,             // Injects your corner radii
+        colorScheme = ProfessionalBlueColorScheme,
+        typography = AppTypography,
+        shapes = AppShapes,
         content = content
     )
 }

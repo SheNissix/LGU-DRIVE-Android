@@ -325,9 +325,9 @@ object DatabaseService {
                     psC.setInt(3, pc["year"]?.toIntOrNull() ?: 0)
                     psC.setString(4, pc["color"]?.ifBlank { "N/A" } ?: "N/A")
                     try { psC.setDate(5, java.sql.Date.valueOf(pc["regDate"] ?: "")) } catch (e: Exception) { psC.setNull(5, java.sql.Types.DATE) }
-                    psC.setString(6, pc["weight"]?.ifBlank { "0" } ?: "0")
+                    psC.setString(6, pc["weight"]?.replace(Regex("[^0-9]"), "")?.ifBlank { "0" } ?: "0")
                     psC.setString(7, pc["engineNo"]?.ifBlank { "N/A" } ?: "N/A")
-                    psC.setString(8, pc["displacement"]?.ifBlank { "N/A" } ?: "N/A")
+                    psC.setString(8, pc["displacement"]?.replace(Regex("[^0-9]"), "")?.ifBlank { "0" } ?: "0")
                     psC.setString(9, pc["fuelType"]?.ifBlank { "G" } ?: "G"); psC.executeUpdate()
                 }
             }
@@ -485,24 +485,12 @@ object DatabaseService {
             val conn = getConnection()
             conn.autoCommit = false
 
-            var doneeId: String? = null
-            var donorId: String? = null
-            conn.prepareStatement("SELECT DoneeID, DonorID FROM application WHERE ApplicationID = ?").use { ps ->
-                ps.setString(1, appId)
-                ps.executeQuery().use { rs ->
-                    if (rs.next()) {
-                        doneeId = rs.getString("DoneeID")
-                        donorId = rs.getString("DonorID")
-                    }
-                }
-            }
-            if (doneeId == null || donorId == null) throw Exception("Application not found.")
-
             val donateIds = mutableListOf<String>()
             conn.prepareStatement("SELECT DonateID FROM donatedvehicle WHERE ApplicationID = ?").use { ps ->
                 ps.setString(1, appId)
                 ps.executeQuery().use { rs -> while (rs.next()) donateIds.add(rs.getString(1)) }
             }
+
             for (did in donateIds) {
                 conn.prepareStatement("DELETE FROM passengercar WHERE DonateID = ?").use { ps ->
                     ps.setString(1, did); ps.executeUpdate()
@@ -515,32 +503,56 @@ object DatabaseService {
                 ps.setString(1, appId); ps.executeUpdate()
             }
 
-            var doneeUsage = 0
-            conn.prepareStatement("SELECT COUNT(*) FROM application WHERE DoneeID = ?").use { ps ->
-                ps.setString(1, doneeId)
-                ps.executeQuery().use { rs -> if (rs.next()) doneeUsage = rs.getInt(1) }
-            }
-            if (doneeUsage == 0) {
-                conn.prepareStatement("DELETE FROM donee WHERE DoneeID = ?").use { ps ->
-                    ps.setString(1, doneeId); ps.executeUpdate()
-                }
-            }
-
-            var donorUsage = 0
-            conn.prepareStatement("SELECT COUNT(*) FROM application WHERE DonorID = ?").use { ps ->
-                ps.setString(1, donorId)
-                ps.executeQuery().use { rs -> if (rs.next()) donorUsage = rs.getInt(1) }
-            }
-            if (donorUsage == 0) {
-                conn.prepareStatement("DELETE FROM donor WHERE DonorID = ?").use { ps ->
-                    ps.setString(1, donorId); ps.executeUpdate()
-                }
-            }
+            // NOTE: Donor and Donee tables are explicitly untouched here.
+            // They remain in the database permanently even if their attached application is deleted.
 
             conn.commit()
             Result.success(Unit)
         } catch (e: Exception) {
             sharedConn?.rollback()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateDonor(donorId: String, payload: Map<String, String>): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val conn = getConnection()
+            conn.prepareStatement(
+                "UPDATE donor SET DonorName = ?, DonorAddress = ?, DonorTelNo = ?, DonorFaxNo = ?, DonorEmail = ? WHERE DonorID = ?"
+            ).use { ps ->
+                ps.setString(1, payload["DonorName"] ?: "")
+                ps.setString(2, payload["DonorAddress"] ?: "")
+                ps.setString(3, payload["DonorTelNo"] ?: "")
+                ps.setString(4, payload["DonorFaxNo"] ?: "")
+                ps.setString(5, payload["DonorEmail"] ?: "")
+                ps.setString(6, donorId)
+
+                val affected = ps.executeUpdate()
+                if (affected > 0) Result.success(Unit) else Result.failure(Exception("Donor not found or could not be updated."))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateDonee(doneeId: String, payload: Map<String, String>): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val conn = getConnection()
+            conn.prepareStatement(
+                "UPDATE donee SET DoneeName = ?, DoneeAddress = ?, ContactPerson = ?, DoneeTelNo = ?, DoneeFaxNo = ?, DoneeEmail = ? WHERE DoneeID = ?"
+            ).use { ps ->
+                ps.setString(1, payload["DoneeName"] ?: "")
+                ps.setString(2, payload["DoneeAddress"] ?: "")
+                ps.setString(3, payload["ContactPerson"] ?: "")
+                ps.setString(4, payload["DoneeTelNo"] ?: "")
+                ps.setString(5, payload["DoneeFaxNo"] ?: "")
+                ps.setString(6, payload["DoneeEmail"] ?: "")
+                ps.setString(7, doneeId)
+
+                val affected = ps.executeUpdate()
+                if (affected > 0) Result.success(Unit) else Result.failure(Exception("Donee not found or could not be updated."))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }
